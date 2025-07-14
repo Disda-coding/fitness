@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>健身追踪器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .loader { border: 4px solid #4A5568; border-radius: 50%; border-top: 4px solid #4299E1; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.6); }
+        .modal-content { animation: slide-up 0.3s ease-out; }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <div id="app-container" class="max-w-md mx-auto bg-gray-800 min-h-dvh shadow-lg">
+
+        <div id="home-page" class="page active p-4">
+            <header class="text-center py-4">
+                <h1 class="text-3xl font-bold text-blue-400">健身追踪器</h1>
+                <p class="text-gray-400 mt-1">选择一个部位开始或查看历史</p>
+            </header>
+            <main class="mt-8 grid grid-cols-2 gap-4">
+                <button onclick="showTrainingPage('chest', '胸部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">💪</div><div class="mt-2 font-semibold text-lg">胸</div></button>
+                <button onclick="showTrainingPage('back', '背部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🚀</div><div class="mt-2 font-semibold text-lg">背</div></button>
+                <button onclick="showTrainingPage('shoulders', '肩部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🏋️</div><div class="mt-2 font-semibold text-lg">肩</div></button>
+                <button onclick="showTrainingPage('legs', '腿部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🦵</div><div class="mt-2 font-semibold text-lg">腿</div></button>
+            </main>
+        </div>
+
+        <div id="training-page" class="page">
+            <header class="flex items-center p-4 bg-gray-900 sticky top-0 z-20">
+                <button onclick="showHomePage()" class="text-blue-400 text-2xl font-bold">&larr;</button>
+                <h1 id="training-title" class="text-2xl font-bold text-blue-400 mx-auto"></h1>
+                <div class="w-8"></div> </header>
+
+            <div class="p-4 space-y-8">
+                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">记录今日训练</h2>
+                    <div id="current-session-container" class="space-y-4">
+                        </div>
+                    <button onclick="addExerciseToSession()" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 transition-colors rounded p-3 font-bold">+ 添加新动作</button>
+                    <button onclick="saveSession()" class="mt-2 w-full bg-green-600 hover:bg-green-500 transition-colors rounded p-3 font-bold text-lg">✓ 完成并保存本次训练</button>
+                </section>
+
+                <section>
+                    <h2 class="text-xl font-semibold mb-4">历史记录</h2>
+                    <div id="history-container" class="space-y-4">
+                        <div id="loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 z-50 items-center justify-center p-4 modal-backdrop hidden">
+        <div class="bg-gray-700 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto modal-content">
+            <h3 id="modal-title" class="text-xl font-bold text-white">通知</h3>
+            <p id="modal-body" class="text-gray-300 mt-2">操作成功！</p>
+            <div class="mt-6 text-right">
+                <button id="modal-close" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">好的</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '<你的项目地址>/api'; // 后端API的基础URL
+        let currentMuscleGroup = ''; // 当前选择的肌肉群
+        let availableExercises = []; // 可用的动作列表
+
+        // --- 模态框 (Modal) 逻辑 ---
+        const modal = document.getElementById('modal');
+        const modalCloseBtn = document.getElementById('modal-close');
+        modalCloseBtn.onclick = () => modal.style.display = 'none'; // 点击“好的”关闭模态框
+        function showModal(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = message;
+            modal.style.display = 'flex'; // 显示模态框
+        }
+
+        // --- 页面导航逻辑 ---
+        const pages = document.querySelectorAll('.page');
+        function showPage(pageId) {
+            // 遍历所有页面，只显示指定ID的页面
+            pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+        }
+
+        function showHomePage() {
+            showPage('home-page'); // 显示主页
+            // 当返回主页时，清除当前肌肉群的LocalStorage数据。
+            // 默认行为是放弃当前未保存的训练。
+            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
+        }
+
+        async function showTrainingPage(muscle, title) {
+            currentMuscleGroup = muscle; // 设置当前肌肉群
+            document.getElementById('training-title').textContent = title; // 设置页面标题
+            document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练容器
+            showPage('training-page'); // 显示训练页面
+            
+            // 1. 加载可用动作列表
+            await loadAvailableExercises();
+            // 2. 更新所有动作下拉菜单
+            updateAllExerciseDropdowns(); 
+
+            // 3. 尝试从LocalStorage加载上次未完成的会话
+            // 如果成功加载了数据，则loadSessionFromLocalStorage返回true，否则返回false
+            if (!await loadSessionFromLocalStorage()) {
+                // 如果LocalStorage中没有数据，则添加一个默认的空训练动作
+                addExerciseToSession(); 
+            }
+            
+            // 4. 加载历史记录
+            await loadHistory();
+        }
+
+        // --- LocalStorage 数据管理 ---
+        function saveSessionToLocalStorage() {
+            const exerciseBlocks = document.querySelectorAll('#current-session-container .exercise-block');
+            const exercisesData = []; // 用于存储要保存的训练数据
+
+            exerciseBlocks.forEach(block => {
+                const exerciseSelect = block.querySelector('.exercise-select');
+                const exerciseName = exerciseSelect ? exerciseSelect.value : ''; 
+                
+                // 只有当动作名称有效且不为“添加新动作”时才保存
+                if (exerciseName && exerciseName !== 'add_new') {
+                    const setsData = [];
+                    const setElements = block.querySelectorAll('.set-item');
+                    setElements.forEach(setEl => {
+                        const weightInput = setEl.querySelector('.set-weight');
+                        const repsInput = setEl.querySelector('.set-reps');
+                        setsData.push({
+                            weight: weightInput ? weightInput.value : '', // 保存当前输入值
+                            reps: repsInput ? repsInput.value : ''
+                        });
+                    });
+                    exercisesData.push({ exercise_name: exerciseName, sets_data: setsData });
+                }
+            });
+
+            // 如果有实际数据（不仅仅是空的默认块），则保存到LocalStorage
+            if (exercisesData.length > 0) {
+                try {
+                    localStorage.setItem(`currentSessionData_${currentMuscleGroup}`, JSON.stringify(exercisesData));
+                    // console.log(`Session for ${currentMuscleGroup} saved to LocalStorage.`);
+                } catch (e) {
+                    console.error("保存到LocalStorage时出错:", e);
+                }
+            } else {
+                // 如果没有有效的训练数据，则清除旧的LocalStorage数据
+                localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
+            }
+        }
+
+        async function loadSessionFromLocalStorage() {
+            const savedData = localStorage.getItem(`currentSessionData_${currentMuscleGroup}`);
+            if (savedData) {
+                try {
+                    const exercises = JSON.parse(savedData);
+                    if (exercises.length > 0) {
+                        document.getElementById('current-session-container').innerHTML = ''; // 清空现有内容
+                        
+                        // 确保availableExercises已加载，以便正确设置下拉菜单的值
+                        if (availableExercises.length === 0) {
+                            await loadAvailableExercises(); 
+                        }
+
+                        exercises.forEach(exercise => {
+                            // 为每个动作块生成唯一ID
+                            const exerciseId = `ex-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`; 
+                            const exerciseDiv = document.createElement('div');
+                            exerciseDiv.id = exerciseId;
+                            exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
+                            exerciseDiv.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                                    <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
+                                </div>
+                                <div class="sets-container mt-3 space-y-2"></div>
+                                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                            `;
+                            document.getElementById('current-session-container').appendChild(exerciseDiv);
+
+                            // 填充动作选择器
+                            const selectElement = exerciseDiv.querySelector('.exercise-select');
+                            let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+                            optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
+                            selectElement.innerHTML = optionsHtml;
+                            selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
+
+                            // 填充组数数据
+                            const setsContainer = exerciseDiv.querySelector('.sets-container');
+                            exercise.sets_data.forEach((set, i) => {
+                                const setDiv = document.createElement('div');
+                                setDiv.className = 'set-item flex items-center gap-2';
+                                setDiv.innerHTML = `
+                                    <span class="text-gray-400 w-12 text-sm">第${i + 1}组</span>
+                                    <input type="number" placeholder="重量(kg)" value="${set.weight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <span class="text-gray-500">x</span>
+                                    <input type="number" placeholder="次数" value="${set.reps}" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                                `;
+                                setsContainer.appendChild(setDiv);
+                            });
+                        });
+                        return true; // 数据加载成功
+                    }
+                } catch (e) {
+                    console.error("解析LocalStorage数据时出错:", e);
+                    localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // 清除损坏的数据
+                }
+            }
+            return false; // 没有找到数据或加载失败
+        }
+
+        // --- 动作管理 ---
+        async function loadAvailableExercises() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
+                if (!response.ok) throw new Error('加载动作列表失败');
+                availableExercises = await response.json();
+            } catch (error) {
+                console.error(error);
+                showModal('错误', '加载预设动作列表失败。');
+            }
+        }
+
+        function updateAllExerciseDropdowns() {
+            const selects = document.querySelectorAll('.exercise-select');
+            selects.forEach(select => {
+                const currentValue = select.value; // 保存当前选中的值
+                let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+                optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
+                select.innerHTML = optionsHtml;
+                if (currentValue && availableExercises.includes(currentValue)) {
+                    select.value = currentValue; // 恢复之前选中的值
+                } else if (availableExercises.length > 0) {
+                    select.value = availableExercises[0]; // 默认选择第一个
+                } else {
+                    select.value = ''; // 如果没有可用动作，则设置为空
+                }
+            });
+        }
+
+        async function handleExerciseSelectChange(selectElement) {
+            if (selectElement.value === 'add_new') {
+                const newExerciseName = prompt(`为【${document.getElementById('training-title').textContent}】添加新动作名称：`);
+                if (newExerciseName && newExerciseName.trim() !== '') {
+                    try {
+                        selectElement.disabled = true; // 禁用选择器，防止重复提交
+                        await fetch(`${API_BASE_URL}/exercises`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ muscle_group: currentMuscleGroup, exercise_name: newExerciseName.trim() })
+                        });
+                        await loadAvailableExercises(); // 重新加载最新动作列表
+                        updateAllExerciseDropdowns(); // 更新所有下拉菜单
+                        selectElement.value = newExerciseName.trim(); // 选中新添加的动作
+                        saveSessionToLocalStorage(); // 保存到LocalStorage
+                    } catch (error) {
+                        showModal('错误', '添加新动作失败。');
+                        selectElement.value = availableExercises[0] || ''; // 失败则恢复默认值
+                    } finally {
+                        selectElement.disabled = false; // 重新启用选择器
+                    }
+                } else {
+                    selectElement.value = availableExercises[0] || ''; // 用户取消或输入为空，恢复默认值
+                }
+            }
+            saveSessionToLocalStorage(); // 动作选择改变时保存到LocalStorage
+        }
+        
+        // --- 当前训练会话管理 ---
+        function addExerciseToSession() {
+            const exerciseId = `ex-${Date.now()}`; // 为新动作生成唯一ID
+            const exerciseDiv = document.createElement('div');
+            exerciseDiv.id = exerciseId;
+            exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
+            exerciseDiv.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                    <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
+                </div>
+                <div class="sets-container mt-3 space-y-2"></div>
+                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+            `;
+            document.getElementById('current-session-container').appendChild(exerciseDiv);
+            addSetToExercise(exerciseId); // 自动为新动作添加第一组
+            updateAllExerciseDropdowns(); // 更新新添加的下拉菜单
+            saveSessionToLocalStorage(); // 添加新动作块后保存
+        }
+
+        function addSetToExercise(exerciseId) {
+            const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
+            const setCount = setsContainer.children.length + 1; // 计算当前是第几组
+            
+            // 尝试获取上一组的重量作为默认值
+            const firstWeightInput = setsContainer.querySelector('.set-weight');
+            const defaultWeight = firstWeightInput ? firstWeightInput.value : '';
+
+            const setDiv = document.createElement('div');
+            setDiv.className = 'set-item flex items-center gap-2';
+            setDiv.innerHTML = `
+                <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
+                <input type="number" placeholder="重量(kg)" value="${defaultWeight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <span class="text-gray-500">x</span>
+                <input type="number" placeholder="次数" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+            `;
+            setsContainer.appendChild(setDiv);
+            saveSessionToLocalStorage(); // 添加新组后保存
+        }
+        
+        function updateSetNumbers(exerciseId) {
+            const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
+            const allSetSpans = setsContainer.querySelectorAll('.set-item span:first-child');
+            allSetSpans.forEach((span, i) => {
+                span.textContent = `第${i + 1}组`; // 更新组数显示
+            });
+        }
+
+        async function saveSession() {
+            const exerciseBlocks = document.querySelectorAll('.exercise-block');
+            if (exerciseBlocks.length === 0) {
+                showModal('提示', '请至少添加一个训练动作。');
+                return;
+            }
+
+            const exercisesData = [];
+            for (const block of exerciseBlocks) {
+                const exerciseName = block.querySelector('.exercise-select').value;
+                if (!exerciseName || exerciseName === 'add_new') {
+                    showModal('错误', '请为所有动作选择一个有效的名称。');
+                    return;
+                }
+
+                const setsData = [];
+                const setElements = block.querySelectorAll('.set-item');
+                let firstWeight = ''; // 用于填充空重量
+
+                for (let i = 0; i < setElements.length; i++) {
+                    const weightInput = setElements[i].querySelector('.set-weight');
+                    const repsInput = setElements[i].querySelector('.set-reps');
+                    let weight = weightInput.value.trim();
+                    const reps = repsInput.value.trim();
+
+                    if (i === 0 && !weight) { showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); return; }
+                    if (!reps) { showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); return; }
+                    if (i === 0) firstWeight = weight; // 记录第一组重量
+                    if (!weight) weight = firstWeight; // 如果后续组没有输入重量，则使用第一组的重量
+
+                    setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
+                }
+                
+                if (setsData.length > 0) {
+                    exercisesData.push({ exercise_name: exerciseName, sets_data: setsData });
+                }
+            }
+
+            if (exercisesData.length === 0) {
+                showModal('提示', '没有有效的训练数据可以保存。');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ muscle_group: currentMuscleGroup, exercises_data: exercisesData }),
+                });
+                if (!response.ok) throw new Error((await response.json()).error || '保存失败');
+                
+                showModal('成功', '训练已保存！');
+                document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
+                addExerciseToSession(); // 添加一个默认的空动作块
+                localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
+                await loadHistory(); // 重新加载历史记录
+            } catch (error) {
+                showModal('保存失败', error.message);
+            }
+        }
+
+        // --- 历史记录管理 ---
+        async function loadHistory() {
+            const historyContainer = document.getElementById('history-container');
+            const loader = document.getElementById('loader');
+
+            // 1. 清除所有之前的训练会话条目（历史记录块）
+            historyContainer.querySelectorAll('.bg-gray-700\\/50').forEach(el => el.remove());
+
+            // 2. 清除之前可能存在的“暂无历史记录”消息
+            const noHistoryMessage = document.getElementById('no-history-message');
+            if (noHistoryMessage) {
+                noHistoryMessage.remove();
+            }
+
+            // 3. 清除之前可能存在的“加载失败”消息
+            const loadErrorMessage = document.getElementById('load-error-message');
+            if (loadErrorMessage) {
+                loadErrorMessage.remove();
+            }
+
+            loader.style.display = 'flex'; // 显示加载动画
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/history/${currentMuscleGroup}`);
+                if (!response.ok) throw new Error((await response.json()).error);
+                const sessions = await response.json();
+
+                loader.style.display = 'none'; // 隐藏加载动画
+
+                if (sessions.length === 0) {
+                    // 如果没有历史记录，则添加“暂无历史记录”消息，并给它一个ID
+                    historyContainer.insertAdjacentHTML('beforeend', '<p id="no-history-message" class="text-gray-500 text-center py-4">暂无历史记录。</p>');
+                    return;
+                }
+
+                let html = '';
+                sessions.forEach(session => {
+                    html += `
+                        <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
+                            <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
+                                <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
+                                <button onclick="deleteSession(${session.session_id})" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
+                            </div>
+                            <div class="space-y-3">
+                    `;
+                    session.exercises_data.forEach(workout => {
+                        html += `
+                                    <div>
+                                        <p class="font-semibold text-white">${workout.exercise_name}</p>
+                                        <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
+                                            ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
+                                        </div>
+                                    </div>
+                        `;
+                    });
+                    html += `</div></div>`;
+                });
+                historyContainer.insertAdjacentHTML('beforeend', html); // 将新历史记录添加到容器
+            } catch (error) {
+                loader.style.display = 'none'; // 隐藏加载动画
+                // 在加载失败时，也给这个消息一个ID
+                historyContainer.insertAdjacentHTML('beforeend', `<p id="load-error-message" class="text-red-400 text-center py-4">加载失败: ${error.message}</p>`);
+            }
+        }
+        
+        async function deleteSession(sessionId) {
+            if (!confirm('确定要删除这次训练记录吗？此操作无法撤销。')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error((await response.json()).error);
+                showModal('成功', '训练记录已删除。');
+                await loadHistory(); // 重新加载历史记录以更新界面
+            } catch (error) {
+                showModal('删除失败', error.message);
+            }
+        }
+
+        // --- 页面初始化 ---
+        document.addEventListener('DOMContentLoaded', () => showHomePage());
+    </script>
+</body>
+</html>

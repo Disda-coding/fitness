@@ -1,0 +1,11 @@
+# Wrangler configuration file
+name = "fitness-tracker"
+main = "src/index.js"
+compatibility_date = "2024-03-01"
+
+
+# 将 D1 数据库绑定到 Worker
+[[d1_databases]]
+binding = "DB" # 在 Worker 中使用的绑定名称
+database_name = "fitness-data" # 你给数据库起的名字
+database_id = "xxxxxxxx-xxxxx-xxxxxxxx" # !!重要!! 此处请保留你自己的 ID 不变
