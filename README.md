@@ -125,7 +125,7 @@ Cloudflare D1 是一个基于 SQLite 的全球分布式数据库，非常适合 
 **1. 创建 D1 数据库:** 如果您还没有 D1 数据库，可以通过 Wrangler 创建：
 
 ```bash
-wrangler d1 create fitness_tracker_db
+wrangler d1 create fitness-data
 ```
 
 记下 `database_id`，并将其粘贴到 `wrangler.toml` 中。
@@ -133,7 +133,7 @@ wrangler d1 create fitness_tracker_db
 **2.应用数据库模式:** 将上面提供的 SQL 模式保存为一个文件 (例如 `schema.sql`)，然后使用 Wrangler 应用它：
 
 ```bash
-wrangler d1 execute fitness_tracker_db --file=./schema.sql # For remote deployment
+wrangler d1 execute fitness-data --file=./schema.sql # For remote deployment
 ```
 
 ### 3. 部署后端 API (Cloudflare Workers)
