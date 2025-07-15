@@ -23,6 +23,7 @@
 
     <div id="app-container" class="max-w-md mx-auto bg-gray-800 min-h-dvh shadow-lg">
 
+        <!-- 主页 -->
         <div id="home-page" class="page active p-4">
             <header class="text-center py-4">
                 <h1 class="text-3xl font-bold text-blue-400">健身追踪器</h1>
@@ -33,24 +34,31 @@
                 <button onclick="showTrainingPage('back', '背部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🚀</div><div class="mt-2 font-semibold text-lg">背</div></button>
                 <button onclick="showTrainingPage('shoulders', '肩部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🏋️</div><div class="mt-2 font-semibold text-lg">肩</div></button>
                 <button onclick="showTrainingPage('legs', '腿部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🦵</div><div class="mt-2 font-semibold text-lg">腿</div></button>
+                <!-- 新增动作管理入口 -->
+                <button onclick="showExerciseManagementPage()" class="bg-gray-700 hover:bg-purple-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md col-span-2 flex flex-col justify-center items-center"><div class="text-4xl">⚙️</div><div class="mt-2 font-semibold text-lg">动作管理</div></button>
             </main>
         </div>
 
+        <!-- 训练和历史记录页 -->
         <div id="training-page" class="page">
             <header class="flex items-center p-4 bg-gray-900 sticky top-0 z-20">
                 <button onclick="showHomePage()" class="text-blue-400 text-2xl font-bold">&larr;</button>
                 <h1 id="training-title" class="text-2xl font-bold text-blue-400 mx-auto"></h1>
-                <div class="w-8"></div> </header>
+                <div class="w-8"></div> <!-- Placeholder for alignment -->
+            </header>
 
             <div class="p-4 space-y-8">
+                <!-- 本次训练内容 -->
                 <section class="bg-gray-700 p-4 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">记录今日训练</h2>
                     <div id="current-session-container" class="space-y-4">
-                        </div>
+                        <!-- 动态添加的训练动作会在这里 -->
+                    </div>
                     <button onclick="addExerciseToSession()" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 transition-colors rounded p-3 font-bold">+ 添加新动作</button>
                     <button onclick="saveSession()" class="mt-2 w-full bg-green-600 hover:bg-green-500 transition-colors rounded p-3 font-bold text-lg">✓ 完成并保存本次训练</button>
                 </section>
 
+                <!-- 历史记录 -->
                 <section>
                     <h2 class="text-xl font-semibold mb-4">历史记录</h2>
                     <div id="history-container" class="space-y-4">
@@ -59,47 +67,132 @@
                 </section>
             </div>
         </div>
+
+        <!-- 动作管理页 -->
+        <div id="exercise-management-page" class="page">
+            <header class="flex items-center p-4 bg-gray-900 sticky top-0 z-20">
+                <button onclick="showHomePage()" class="text-blue-400 text-2xl font-bold">&larr;</button>
+                <h1 class="text-2xl font-bold text-purple-400 mx-auto">动作管理</h1>
+                <div class="w-8"></div> <!-- Placeholder for alignment -->
+            </header>
+
+            <div class="p-4 space-y-8">
+                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">选择肌肉群</h2>
+                    <select id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)" 
+                            class="w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-400 text-lg">
+                        <option value="">-- 请选择肌肉群 --</option>
+                        <option value="chest">胸部</option>
+                        <option value="back">背部</option>
+                        <option value="shoulders">肩部</option>
+                        <option value="legs">腿部</option>
+                    </select>
+                </section>
+
+                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">动作列表</h2>
+                    <div id="exercise-list-container" class="space-y-2">
+                        <p class="text-gray-500 text-center py-4" id="no-exercises-message">请选择一个肌肉群。</p>
+                        <div id="exercise-list-loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="new-exercise-input" placeholder="新动作名称" 
+                               class="w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-purple-400">
+                        <button onclick="addNewExercise()" class="bg-purple-600 hover:bg-purple-500 transition-colors rounded p-2 font-bold whitespace-nowrap">添加</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
     </div>
 
+    <!-- 全局 Modal 弹窗 -->
     <div id="modal" class="fixed inset-0 z-50 items-center justify-center p-4 modal-backdrop hidden">
         <div class="bg-gray-700 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto modal-content">
             <h3 id="modal-title" class="text-xl font-bold text-white">通知</h3>
             <p id="modal-body" class="text-gray-300 mt-2">操作成功！</p>
-            <div class="mt-6 text-right">
+            <div class="mt-6 text-right" id="modal-actions">
                 <button id="modal-close" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">好的</button>
             </div>
         </div>
     </div>
 
     <script>
-        // IMPORTANT: Replace with your deployed Cloudflare Worker URL
-        // 例如: 'https://fitness-tracker-worker.your-username.workers.dev/api'
-        const API_BASE_URL = '<你的项目地址>/api'; 
-        let currentMuscleGroup = ''; // 当前选择的肌肉群
+        const API_BASE_URL = 'xxx/api'; // 后端API的基础URL
+        let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
+        let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
 
         // --- 模态框 (Modal) 逻辑 ---
         const modal = document.getElementById('modal');
-        const modalCloseBtn = document.getElementById('modal-close');
-        modalCloseBtn.onclick = () => modal.style.display = 'none'; // 点击“好的”关闭模态框
+        const modalActions = document.getElementById('modal-actions'); // 模态框按钮容器
+
+        // 默认的“好的”按钮点击事件
+        function defaultModalClose() {
+            modal.style.display = 'none';
+            restoreDefaultModalButton(); // 确保每次关闭后恢复默认按钮
+        }
+        // 初始设置默认关闭按钮
+        document.getElementById('modal-close').onclick = defaultModalClose;
+
         function showModal(title, message) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = message;
-            modal.style.display = 'flex'; // 显示模态框
+            modal.style.display = 'flex';
+            restoreDefaultModalButton(); // 确保显示通知时是默认的“好的”按钮
         }
+
+        // 用于确认操作的模态框
+        function showConfirmModal(title, message, onConfirmCallback) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = message;
+            
+            modalActions.innerHTML = ''; // 清空所有按钮
+
+            // 添加“取消”按钮
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'bg-gray-500 hover:bg-gray-400 text-white font-bold py-2 px-4 rounded mr-2';
+            cancelButton.textContent = '取消';
+            cancelButton.onclick = defaultModalClose; // 点击取消关闭模态框并恢复默认按钮
+            modalActions.appendChild(cancelButton);
+
+            // 添加“确定”按钮
+            const confirmButton = document.createElement('button');
+            confirmButton.className = 'bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded';
+            confirmButton.textContent = '确定';
+            confirmButton.onclick = () => {
+                defaultModalClose(); // 关闭模态框并恢复默认按钮
+                onConfirmCallback(); // 执行确认回调
+            };
+            modalActions.appendChild(confirmButton);
+
+            modal.style.display = 'flex';
+        }
+
+        // 恢复模态框到默认的“好的”按钮状态
+        function restoreDefaultModalButton() {
+            modalActions.innerHTML = ''; // 清空所有自定义按钮
+            const defaultOkButton = document.createElement('button');
+            defaultOkButton.id = 'modal-close';
+            defaultOkButton.className = 'bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded';
+            defaultOkButton.textContent = '好的';
+            defaultOkButton.onclick = defaultModalClose;
+            modalActions.appendChild(defaultOkButton);
+        }
+
 
         // --- 页面导航逻辑 ---
         const pages = document.querySelectorAll('.page');
         function showPage(pageId) {
-            // 遍历所有页面，只显示指定ID的页面
             pages.forEach(page => page.classList.toggle('active', page.id === pageId));
         }
 
         function showHomePage() {
             showPage('home-page'); // 显示主页
-            // 当返回主页时，清除当前肌肉群的LocalStorage数据。
-            // 默认行为是放弃当前未保存的训练。
+            // 当返回主页时，清除当前训练的LocalStorage数据，因为它不再是“未完成”的状态
             localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
+            // 清空动作管理页面的选择
+            document.getElementById('manage-muscle-select').value = '';
         }
 
         async function showTrainingPage(muscle, title) {
@@ -110,11 +203,10 @@
             
             // 1. 加载可用动作列表
             await loadAvailableExercises();
-            // 2. 更新所有动作下拉菜单 (在加载LocalStorage数据前确保下拉菜单已更新)
+            // 2. 更新所有动作下拉菜单
             updateAllExerciseDropdowns(); 
 
             // 3. 尝试从LocalStorage加载上次未完成的会话
-            // 如果成功加载了数据，则loadSessionFromLocalStorage返回true，否则返回false
             if (!await loadSessionFromLocalStorage()) {
                 // 如果LocalStorage中没有数据，则添加一个默认的空训练动作
                 addExerciseToSession(); 
@@ -122,6 +214,19 @@
             
             // 4. 加载历史记录
             await loadHistory();
+        }
+
+        async function showExerciseManagementPage() {
+            showPage('exercise-management-page');
+            // 每次进入管理页面时，清除上次选择的肌肉群，并重置列表
+            document.getElementById('manage-muscle-select').value = '';
+            // 确保在重置内容时，loader元素不被移除，或者在需要时重新插入
+            const exerciseListContainer = document.getElementById('exercise-list-container');
+            const initialContent = '<p class="text-gray-500 text-center py-4" id="no-exercises-message">请选择一个肌肉群。</p><div id="exercise-list-loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>';
+            exerciseListContainer.innerHTML = initialContent; // 重置内容
+            // 再次获取loader的引用，确保它是最新的DOM元素
+            let exerciseListLoader = document.getElementById('exercise-list-loader');
+            if(exerciseListLoader) exerciseListLoader.style.display = 'none'; // 确保初始是隐藏的
         }
 
         // --- LocalStorage 数据管理 ---
@@ -184,11 +289,11 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this);"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
-                                <button onclick="addSetToExercise('${exerciseId}');" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
                             `;
                             document.getElementById('current-session-container').appendChild(exerciseDiv);
 
@@ -224,7 +329,7 @@
             return false; // 没有找到数据或加载失败
         }
 
-        // --- 动作管理 ---
+        // --- 动作管理 (训练页面和动作管理页面共用) ---
         async function loadAvailableExercises() {
             try {
                 const response = await fetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
@@ -243,9 +348,8 @@
                 let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
                 optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
                 select.innerHTML = optionsHtml;
-                // 尝试恢复之前选中的值，如果新列表中包含该值
                 if (currentValue && availableExercises.includes(currentValue)) {
-                    select.value = currentValue; 
+                    select.value = currentValue; // 恢复之前选中的值
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
                 } else {
@@ -256,28 +360,33 @@
 
         async function handleExerciseSelectChange(selectElement) {
             if (selectElement.value === 'add_new') {
+                // 使用 prompt 获取新动作名称，因为这个场景下需要用户输入
                 const newExerciseName = prompt(`为【${document.getElementById('training-title').textContent}】添加新动作名称：`);
                 if (newExerciseName && newExerciseName.trim() !== '') {
                     try {
                         selectElement.disabled = true; // 禁用选择器，防止重复提交
-                        await fetch(`${API_BASE_URL}/exercises`, {
+                        const response = await fetch(`${API_BASE_URL}/exercises`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ muscle_group: currentMuscleGroup, exercise_name: newExerciseName.trim() })
                         });
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || '添加新动作失败。');
+                        }
                         await loadAvailableExercises(); // 重新加载最新动作列表
                         updateAllExerciseDropdowns(); // 更新所有下拉菜单
                         selectElement.value = newExerciseName.trim(); // 选中新添加的动作
                         saveSessionToLocalStorage(); // 保存到LocalStorage
+                        showModal('成功', `动作 "${newExerciseName.trim()}" 已添加！`);
                     } catch (error) {
-                        showModal('错误', '添加新动作失败。');
+                        showModal('错误', error.message);
                         selectElement.value = availableExercises[0] || ''; // 失败则恢复默认值
                     } finally {
                         selectElement.disabled = false; // 重新启用选择器
                     }
                 } else {
-                    // 用户取消或输入为空，恢复到第一个可用动作或空
-                    selectElement.value = availableExercises.length > 0 ? availableExercises[0] : ''; 
+                    selectElement.value = availableExercises[0] || ''; // 用户取消或输入为空，恢复默认值
                 }
             }
             saveSessionToLocalStorage(); // 动作选择改变时保存到LocalStorage
@@ -291,11 +400,11 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this);"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
-                <button onclick="addSetToExercise('${exerciseId}');" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
             addSetToExercise(exerciseId); // 自动为新动作添加第一组
@@ -307,12 +416,13 @@
             const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
             const setCount = setsContainer.children.length + 1; // 计算当前是第几组
             
-            let defaultWeight = '';
             // 获取上一组的重量作为默认值
-            if (setsContainer.children.length > 0) {
-                const lastSetWeightInput = setsContainer.lastElementChild.querySelector('.set-weight');
-                if (lastSetWeightInput) {
-                    defaultWeight = lastSetWeightInput.value;
+            let defaultWeight = '';
+            // 如果不是第一组，尝试获取上一组的重量
+            if (setCount > 1) {
+                const previousSetWeightInput = setsContainer.querySelector(`.set-item:last-child .set-weight`);
+                if (previousSetWeightInput) {
+                    defaultWeight = previousSetWeightInput.value;
                 }
             }
 
@@ -346,8 +456,7 @@
 
             const exercisesData = [];
             for (const block of exerciseBlocks) {
-                const exerciseSelect = block.querySelector('.exercise-select');
-                const exerciseName = exerciseSelect.value;
+                const exerciseName = block.querySelector('.exercise-select').value;
                 if (!exerciseName || exerciseName === 'add_new') {
                     showModal('错误', '请为所有动作选择一个有效的名称。');
                     return;
@@ -355,7 +464,7 @@
 
                 const setsData = [];
                 const setElements = block.querySelectorAll('.set-item');
-                let lastValidWeight = ''; // 用于填充空重量，初始化为空
+                let lastValidWeight = ''; // 用于存储上一组的有效重量
 
                 for (let i = 0; i < setElements.length; i++) {
                     const weightInput = setElements[i].querySelector('.set-weight');
@@ -363,25 +472,14 @@
                     let weight = weightInput.value.trim();
                     const reps = repsInput.value.trim();
 
-                    if (i === 0 && !weight) { 
-                        showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); 
-                        return; 
-                    }
-                    if (!reps) { 
-                        showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); 
-                        return; 
-                    }
+                    if (i === 0 && !weight) { showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); return; }
+                    if (!reps) { showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); return; }
                     
-                    // 如果当前重量为空，使用上一组的有效重量
-                    if (!weight && lastValidWeight) {
-                        weight = lastValidWeight;
-                    } else if (weight) {
-                        // 如果当前重量不为空，更新lastValidWeight
-                        lastValidWeight = weight;
+                    // 如果当前组没有输入重量，则使用上一组的有效重量
+                    if (!weight) {
+                        weight = lastValidWeight; 
                     } else {
-                        // 如果第一组重量为空且没有lastValidWeight (理论上第一组必填，这里是兜底)
-                        showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组重量不能为空！`); 
-                        return;
+                        lastValidWeight = weight; // 更新上一组的有效重量
                     }
 
                     setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
@@ -403,7 +501,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ muscle_group: currentMuscleGroup, exercises_data: exercisesData }),
                 });
-                if (!response.ok) throw new Error((await response.json()).error || '保存失败');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '保存失败');
+                }
                 
                 showModal('成功', '训练已保存！');
                 document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
@@ -418,7 +519,17 @@
         // --- 历史记录管理 ---
         async function loadHistory() {
             const historyContainer = document.getElementById('history-container');
-            const loader = document.getElementById('loader');
+            let loader = document.getElementById('loader'); // 使用 let 声明
+
+            // 防御性检查：如果 loader 元素不存在，则重新创建并添加到 DOM 中
+            if (!loader) {
+                console.warn("Loader element not found, recreating it for history container."); // 添加警告日志
+                loader = document.createElement('div');
+                loader.id = 'loader';
+                loader.className = 'hidden justify-center items-center py-8';
+                loader.innerHTML = '<div class="loader"></div>';
+                historyContainer.appendChild(loader); // 将 loader 添加回 historyContainer
+            }
 
             // 1. 清除所有之前的训练会话条目（历史记录块）
             historyContainer.querySelectorAll('.bg-gray-700\\/50').forEach(el => el.remove());
@@ -435,14 +546,28 @@
                 loadErrorMessage.remove();
             }
 
-            loader.style.display = 'flex'; // 显示加载动画
+            // 在尝试访问 style 属性之前，再次确认 loader 不为 null
+            if (loader) {
+                console.log("Loader element for history before setting style:", loader); // 添加调试日志
+                loader.style.display = 'flex'; // 显示加载动画
+            } else {
+                console.error("Critical error: History loader element is null even after recreation attempt.");
+                // 此时可以考虑直接返回或显示一个无法加载的错误信息
+                historyContainer.insertAdjacentHTML('beforeend', `<p class="text-red-400 text-center py-4">历史记录加载器初始化失败，请刷新页面。</p>`);
+                return; // 阻止后续操作
+            }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/history/${currentMuscleGroup}`);
-                if (!response.ok) throw new Error((await response.json()).error);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '加载失败');
+                }
                 const sessions = await response.json();
 
-                loader.style.display = 'none'; // 隐藏加载动画
+                if (loader) loader.style.display = 'none'; // 隐藏加载动画
+                else console.warn("History loader element became null while fetching data.");
+
 
                 if (sessions.length === 0) {
                     // 如果没有历史记录，则添加“暂无历史记录”消息，并给它一个ID
@@ -462,35 +587,213 @@
                     `;
                     session.exercises_data.forEach(workout => {
                         html += `
-                                <div>
-                                    <p class="font-semibold text-white">${workout.exercise_name}</p>
-                                    <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
-                                        ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
+                                    <div>
+                                        <p class="font-semibold text-white">${workout.exercise_name}</p>
+                                        <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
+                                            ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
+                                        </div>
                                     </div>
-                                </div>
                         `;
                     });
                     html += `</div></div>`;
                 });
                 historyContainer.insertAdjacentHTML('beforeend', html); // 将新历史记录添加到容器
             } catch (error) {
-                loader.style.display = 'none'; // 隐藏加载动画
+                if (loader) loader.style.display = 'none'; // 隐藏加载动画
+                else console.warn("History loader element was null during error handling.");
                 // 在加载失败时，也给这个消息一个ID
                 historyContainer.insertAdjacentHTML('beforeend', `<p id="load-error-message" class="text-red-400 text-center py-4">加载失败: ${error.message}</p>`);
             }
         }
         
         async function deleteSession(sessionId) {
-            if (!confirm('确定要删除这次训练记录吗？此操作无法撤销。')) return;
+            // 使用自定义确认模态框替代原生的 confirm()
+            showConfirmModal('确认删除', '确定要删除这次训练记录吗？此操作无法撤销。', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE' });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '删除失败');
+                    }
+                    showModal('成功', '训练记录已删除。');
+                    await loadHistory(); // 重新加载历史记录以更新界面
+                } catch (error) {
+                    showModal('删除失败', error.message);
+                }
+            });
+        }
+
+        // --- 动作管理页面功能 ---
+        async function loadExercisesForManagement(muscle) {
+            currentManageMuscleGroup = muscle;
+            const exerciseListContainer = document.getElementById('exercise-list-container');
+            let exerciseListLoader = document.getElementById('exercise-list-loader'); // 使用 let 声明
+
+            // 防御性检查：如果 loader 元素不存在，则重新创建并添加到 DOM 中
+            if (!exerciseListLoader) {
+                console.warn("Exercise list loader element not found, recreating it for management container."); // 添加警告日志
+                exerciseListLoader = document.createElement('div');
+                exerciseListLoader.id = 'exercise-list-loader';
+                exerciseListLoader.className = 'hidden justify-center items-center py-8';
+                exerciseListLoader.innerHTML = '<div class="loader"></div>';
+                exerciseListContainer.appendChild(exerciseListLoader); // 将 loader 添加回 exerciseListContainer
+            }
+
+            // 1. 清除所有之前的动作列表项（class="flex items-center justify-between"）
+            exerciseListContainer.querySelectorAll('.flex.items-center.justify-between').forEach(el => el.remove());
+
+            // 2. 清除之前可能存在的“请选择一个肌肉群”或“该肌肉群暂无动作”消息
+            const noExercisesMessage = document.getElementById('no-exercises-message');
+            if (noExercisesMessage) {
+                noExercisesMessage.remove();
+            }
+            // 3. 清除之前可能存在的加载失败消息 (如果管理页面也有)
+            const managementLoadErrorMessage = document.getElementById('management-load-error-message');
+            if (managementLoadErrorMessage) {
+                managementLoadErrorMessage.remove();
+            }
+
+            if (!muscle) {
+                exerciseListContainer.insertAdjacentHTML('beforeend', '<p class="text-gray-500 text-center py-4" id="no-exercises-message">请选择一个肌肉群。</p>');
+                if (exerciseListLoader) exerciseListLoader.style.display = 'none'; // Hide loader if no muscle selected
+                return;
+            }
+
+            // 在尝试访问 style 属性之前，再次确认 loader 不为 null
+            if (exerciseListLoader) {
+                console.log("Loader element for management before setting style:", exerciseListLoader); // 添加调试日志
+                exerciseListLoader.style.display = 'flex'; // 显示加载动画
+            } else {
+                console.error("Critical error: Management loader element is null even after recreation attempt.");
+                exerciseListContainer.insertAdjacentHTML('beforeend', `<p class="text-red-400 text-center py-4">动作管理加载器初始化失败，请刷新页面。</p>`);
+                return; // 阻止后续操作
+            }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error((await response.json()).error);
-                showModal('成功', '训练记录已删除。');
-                await loadHistory(); // 重新加载历史记录以更新界面
+                const response = await fetch(`${API_BASE_URL}/exercises/${muscle}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '加载动作列表失败');
+                }
+                const exercises = await response.json();
+
+                if (exerciseListLoader) exerciseListLoader.style.display = 'none'; // 隐藏加载动画
+                else console.warn("Management loader element became null while fetching data.");
+
+
+                if (exercises.length === 0) {
+                    exerciseListContainer.insertAdjacentHTML('beforeend', '<p class="text-gray-500 text-center py-4" id="no-exercises-message">该肌肉群暂无动作，请添加。</p>');
+                    return;
+                }
+
+                let html = '';
+                exercises.forEach(ex => {
+                    html += `
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-600">
+                            <span class="text-white text-lg flex-grow mr-2">${ex}</span>
+                            <div class="flex gap-2">
+                                <button onclick="editExercise('${muscle}', '${ex}')" class="bg-blue-600 hover:bg-blue-500 text-white py-1 px-3 rounded text-sm">编辑</button>
+                                <button onclick="deleteExerciseFromManagement('${muscle}', '${ex}')" class="bg-red-600 hover:bg-red-500 text-white py-1 px-3 rounded text-sm">删除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                exerciseListContainer.insertAdjacentHTML('beforeend', html);
             } catch (error) {
-                showModal('删除失败', error.message);
+                if (exerciseListLoader) exerciseListLoader.style.display = 'none';
+                else console.warn("Management loader element was null during error handling.");
+                exerciseListContainer.insertAdjacentHTML('beforeend', `<p id="management-load-error-message" class="text-red-400 text-center py-4">加载动作失败: ${error.message}</p>`);
             }
+        }
+
+        async function addNewExercise() {
+            const muscle = document.getElementById('manage-muscle-select').value;
+            const newExerciseInput = document.getElementById('new-exercise-input');
+            const newExerciseName = newExerciseInput.value.trim();
+
+            if (!muscle) {
+                showModal('提示', '请先选择一个肌肉群。');
+                return;
+            }
+            if (!newExerciseName) {
+                showModal('提示', '请输入新动作名称。');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/exercises`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ muscle_group: muscle, exercise_name: newExerciseName })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '添加失败');
+                }
+                showModal('成功', `动作 "${newExerciseName}" 已添加。`);
+                newExerciseInput.value = ''; // 清空输入框
+                await loadExercisesForManagement(muscle); // 重新加载列表
+                // 刷新训练页面的可用动作列表，以防用户切换过去
+                currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
+                await loadAvailableExercises(); 
+                updateAllExerciseDropdowns();
+            } catch (error) {
+                showModal('添加失败', error.message);
+            }
+        }
+
+        async function editExercise(muscle, oldName) {
+            // 使用 prompt 获取新动作名称
+            const newName = prompt(`编辑动作 "${oldName}" 的名称：`, oldName);
+            if (newName === null || newName.trim() === '' || newName.trim() === oldName) {
+                // 用户取消或输入为空或名称未改变
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/exercises`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ muscle_group: muscle, old_exercise_name: oldName, new_exercise_name: newName.trim() })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '编辑失败');
+                }
+                showModal('成功', `动作 "${oldName}" 已更新为 "${newName.trim()}"。`);
+                await loadExercisesForManagement(muscle); // 重新加载列表
+                // 刷新训练页面的可用动作列表
+                currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
+                await loadAvailableExercises(); 
+                updateAllExerciseDropdowns();
+            } catch (error) {
+                showModal('编辑失败', error.message);
+            }
+        }
+
+        async function deleteExerciseFromManagement(muscle, exerciseName) {
+            // 使用自定义确认模态框替代原生的 confirm()
+            showConfirmModal('确认删除', `确定要删除动作 "${exerciseName}" 吗？此操作无法撤销。`, async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/exercises`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ muscle_group: muscle, exercise_name: exerciseName })
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '删除失败');
+                    }
+                    showModal('成功', `动作 "${exerciseName}" 已删除。`);
+                    await loadExercisesForManagement(muscle); // 重新加载列表
+                    // 刷新训练页面的可用动作列表
+                    currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
+                    await loadAvailableExercises(); 
+                    updateAllExerciseDropdowns();
+                } catch (error) {
+                    showModal('删除失败', error.message);
+                }
+            });
         }
 
         // --- 页面初始化 ---
