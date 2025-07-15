@@ -194,6 +194,8 @@ wrangler d1 execute fitness-data --file=./schema.sql # For remote deployment
    - 如果你选择 Direct Upload：
      - 将你的 `index.html` 文件**压缩zip后**上传。
 
+   **index.html在public文件夹中**
+
 2. **更新前端 `index.html` 中的 API_BASE_URL**: 打开你的前端 `index.html` 文件，找到 `API_BASE_URL` 常量：
 
    ```

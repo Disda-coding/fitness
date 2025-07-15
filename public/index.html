@@ -72,7 +72,9 @@
     </div>
 
     <script>
-        const API_BASE_URL = '<你的项目地址>/api'; // 后端API的基础URL
+        // IMPORTANT: Replace with your deployed Cloudflare Worker URL
+        // 例如: 'https://fitness-tracker-worker.your-username.workers.dev/api'
+        const API_BASE_URL = '<你的项目地址>/api'; 
         let currentMuscleGroup = ''; // 当前选择的肌肉群
         let availableExercises = []; // 可用的动作列表
 
@@ -108,7 +110,7 @@
             
             // 1. 加载可用动作列表
             await loadAvailableExercises();
-            // 2. 更新所有动作下拉菜单
+            // 2. 更新所有动作下拉菜单 (在加载LocalStorage数据前确保下拉菜单已更新)
             updateAllExerciseDropdowns(); 
 
             // 3. 尝试从LocalStorage加载上次未完成的会话
@@ -182,11 +184,11 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this);"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
-                                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                                <button onclick="addSetToExercise('${exerciseId}');" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
                             `;
                             document.getElementById('current-session-container').appendChild(exerciseDiv);
 
@@ -241,8 +243,9 @@
                 let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
                 optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
                 select.innerHTML = optionsHtml;
+                // 尝试恢复之前选中的值，如果新列表中包含该值
                 if (currentValue && availableExercises.includes(currentValue)) {
-                    select.value = currentValue; // 恢复之前选中的值
+                    select.value = currentValue; 
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
                 } else {
@@ -273,7 +276,8 @@
                         selectElement.disabled = false; // 重新启用选择器
                     }
                 } else {
-                    selectElement.value = availableExercises[0] || ''; // 用户取消或输入为空，恢复默认值
+                    // 用户取消或输入为空，恢复到第一个可用动作或空
+                    selectElement.value = availableExercises.length > 0 ? availableExercises[0] : ''; 
                 }
             }
             saveSessionToLocalStorage(); // 动作选择改变时保存到LocalStorage
@@ -287,11 +291,11 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this);"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
-                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                <button onclick="addSetToExercise('${exerciseId}');" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
             addSetToExercise(exerciseId); // 自动为新动作添加第一组
@@ -303,9 +307,14 @@
             const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
             const setCount = setsContainer.children.length + 1; // 计算当前是第几组
             
-            // 尝试获取上一组的重量作为默认值
-            const firstWeightInput = setsContainer.querySelector('.set-weight');
-            const defaultWeight = firstWeightInput ? firstWeightInput.value : '';
+            let defaultWeight = '';
+            // 获取上一组的重量作为默认值
+            if (setsContainer.children.length > 0) {
+                const lastSetWeightInput = setsContainer.lastElementChild.querySelector('.set-weight');
+                if (lastSetWeightInput) {
+                    defaultWeight = lastSetWeightInput.value;
+                }
+            }
 
             const setDiv = document.createElement('div');
             setDiv.className = 'set-item flex items-center gap-2';
@@ -337,7 +346,8 @@
 
             const exercisesData = [];
             for (const block of exerciseBlocks) {
-                const exerciseName = block.querySelector('.exercise-select').value;
+                const exerciseSelect = block.querySelector('.exercise-select');
+                const exerciseName = exerciseSelect.value;
                 if (!exerciseName || exerciseName === 'add_new') {
                     showModal('错误', '请为所有动作选择一个有效的名称。');
                     return;
@@ -345,7 +355,7 @@
 
                 const setsData = [];
                 const setElements = block.querySelectorAll('.set-item');
-                let firstWeight = ''; // 用于填充空重量
+                let lastValidWeight = ''; // 用于填充空重量，初始化为空
 
                 for (let i = 0; i < setElements.length; i++) {
                     const weightInput = setElements[i].querySelector('.set-weight');
@@ -353,10 +363,26 @@
                     let weight = weightInput.value.trim();
                     const reps = repsInput.value.trim();
 
-                    if (i === 0 && !weight) { showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); return; }
-                    if (!reps) { showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); return; }
-                    if (i === 0) firstWeight = weight; // 记录第一组重量
-                    if (!weight) weight = firstWeight; // 如果后续组没有输入重量，则使用第一组的重量
+                    if (i === 0 && !weight) { 
+                        showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); 
+                        return; 
+                    }
+                    if (!reps) { 
+                        showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); 
+                        return; 
+                    }
+                    
+                    // 如果当前重量为空，使用上一组的有效重量
+                    if (!weight && lastValidWeight) {
+                        weight = lastValidWeight;
+                    } else if (weight) {
+                        // 如果当前重量不为空，更新lastValidWeight
+                        lastValidWeight = weight;
+                    } else {
+                        // 如果第一组重量为空且没有lastValidWeight (理论上第一组必填，这里是兜底)
+                        showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组重量不能为空！`); 
+                        return;
+                    }
 
                     setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
                 }
@@ -436,12 +462,12 @@
                     `;
                     session.exercises_data.forEach(workout => {
                         html += `
-                                    <div>
-                                        <p class="font-semibold text-white">${workout.exercise_name}</p>
-                                        <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
-                                            ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
-                                        </div>
+                                <div>
+                                    <p class="font-semibold text-white">${workout.exercise_name}</p>
+                                    <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
+                                        ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
                                     </div>
+                                </div>
                         `;
                     });
                     html += `</div></div>`;
