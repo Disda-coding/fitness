@@ -8,117 +8,466 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .page { display: none; }
+        :root {
+            --primary: #3a86ff;
+            --secondary: #ff006e;
+            --accent: #8338ec;
+            --dark: #111827;
+            --darker: #0a0f1d;
+            --card-bg: #1e293b;
+        }
+        
+        body { 
+            font-family: 'Noto Sans SC', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            background: radial-gradient(circle at top, var(--darker), var(--dark));
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .page { 
+            display: none; 
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .page.active { display: block; }
-        .loader { border: 4px solid #4A5568; border-radius: 50%; border-top: 4px solid #4299E1; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.6); }
-        .modal-content { animation: slide-up 0.3s ease-out; }
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* 头部样式 */
+        .app-header {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .app-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 8px rgba(58, 134, 255, 0.2);
+        }
+        
+        .app-subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(26, 32, 44, 0.8));
+            border: 1px solid rgba(74, 85, 104, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-header {
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(74, 85, 104, 0.3);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 0.75rem;
+            font-size: 1.3rem;
+        }
+        
+        /* 网格布局 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* 肌肉群卡片 */
+        .muscle-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            height: 200px;
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(26, 32, 44, 0.8));
+            border: 1px solid rgba(74, 85, 104, 0.3);
+        }
+        
+        .muscle-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--accent), var(--secondary));
+            z-index: -1;
+            border-radius: 18px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .muscle-card:hover::before {
+            opacity: 1;
+        }
+        
+        .muscle-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .muscle-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .muscle-card:hover .muscle-icon {
+            transform: scale(1.1);
+        }
+        
+        .muscle-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), #5a9cff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #2b78ff, #4a8cff);
+            box-shadow: 0 6px 20px rgba(58, 134, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(90deg, var(--accent), #9a5eff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(131, 56, 236, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(90deg, #7327e6, #8847eb);
+            box-shadow: 0 6px 20px rgba(131, 56, 236, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .btn-action {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(74, 85, 104, 0.4);
+            color: #cbd5e1;
+        }
+        
+        .btn-action:hover {
+            background: rgba(30, 41, 59, 1);
+            border: 1px solid var(--primary);
+            color: white;
+        }
+        
+        /* 表单元素 */
+        input, select {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(74, 85, 104, 0.4);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.3);
+        }
+        
+        /* 加载动画 */
+        .loader {
+            border: 4px solid rgba(74, 85, 104, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 模态框 */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .app-title {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 1.25rem;
+            }
+        }
+        
+        /* 霓虹效果 */
+        .neon-text {
+            text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(58, 134, 255, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(58, 134, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(58, 134, 255, 0); }
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-
-    <div id="app-container" class="max-w-md mx-auto bg-gray-800 min-h-dvh shadow-lg">
-
+<body>
+    <div class="app-container">
         <!-- 主页 -->
-        <div id="home-page" class="page active p-4">
-            <header class="text-center py-4">
-                <h1 class="text-3xl font-bold text-blue-400">健身追踪器</h1>
-                <p class="text-gray-400 mt-1">选择一个部位开始或查看历史</p>
-            </header>
-            <main class="mt-8 grid grid-cols-2 gap-4">
-                <button onclick="showTrainingPage('chest', '胸部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">💪</div><div class="mt-2 font-semibold text-lg">胸</div></button>
-                <button onclick="showTrainingPage('back', '背部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🚀</div><div class="mt-2 font-semibold text-lg">背</div></button>
-                <button onclick="showTrainingPage('shoulders', '肩部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🏋️</div><div class="mt-2 font-semibold text-lg">肩</div></button>
-                <button onclick="showTrainingPage('legs', '腿部训练')" class="bg-gray-700 hover:bg-blue-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md aspect-square flex flex-col justify-center items-center"><div class="text-4xl">🦵</div><div class="mt-2 font-semibold text-lg">腿</div></button>
-                <!-- 新增动作管理入口 -->
-                <button onclick="showExerciseManagementPage()" class="bg-gray-700 hover:bg-purple-600 transition-all duration-300 rounded-lg p-6 text-center shadow-md col-span-2 flex flex-col justify-center items-center"><div class="text-4xl">⚙️</div><div class="mt-2 font-semibold text-lg">动作管理</div></button>
-            </main>
+        <div id="home-page" class="page active">
+            <div class="app-header">
+                <h1 class="app-title">健身追踪器</h1>
+                <p class="app-subtitle">记录你的每一次训练，见证身体的变化</p>
+            </div>
+            
+            <div class="grid-container">
+                <div class="muscle-card" onclick="showTrainingPage('chest', '胸部训练')">
+                    <div class="muscle-icon">💪</div>
+                    <div class="muscle-name">胸 & 三头</div>
+                </div>
+                
+                <div class="muscle-card" onclick="showTrainingPage('back', '背部训练')">
+                    <div class="muscle-icon">🚀</div>
+                    <div class="muscle-name">背 & 二头</div>
+                </div>
+                
+                <div class="muscle-card" onclick="showTrainingPage('shoulders', '肩部训练')">
+                    <div class="muscle-icon">🏋️</div>
+                    <div class="muscle-name">肩部训练</div>
+                </div>
+                
+                <div class="muscle-card" onclick="showTrainingPage('legs', '腿部训练')">
+                    <div class="muscle-icon">🦵</div>
+                    <div class="muscle-name">腿 & 核心</div>
+                </div>
+                
+                <div class="muscle-card" onclick="showExerciseManagementPage()">
+                    <div class="muscle-icon">⚙️</div>
+                    <div class="muscle-name">动作管理</div>
+                </div>
+            </div>
+            
+     
         </div>
 
-        <!-- 训练和历史记录页 -->
+        <!-- 训练页面 -->
         <div id="training-page" class="page">
-            <header class="flex items-center p-4 bg-gray-900 sticky top-0 z-20">
-                <button onclick="showHomePage()" class="text-blue-400 text-2xl font-bold">&larr;</button>
-                <h1 id="training-title" class="text-2xl font-bold text-blue-400 mx-auto"></h1>
-                <div class="w-8"></div> <!-- Placeholder for alignment -->
-            </header>
-
-            <div class="p-4 space-y-8">
-                <!-- 本次训练内容 -->
-                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">记录今日训练</h2>
-                    <div id="current-session-container" class="space-y-4">
-                        <!-- 动态添加的训练动作会在这里 -->
+            <div class="flex items-center mb-6">
+                <button onclick="showHomePage()" class="btn btn-action mr-4">
+                    <i class="fas fa-arrow-left mr-2"></i> 返回
+                </button>
+                <h1 id="training-title" class="text-2xl font-bold text-white flex-grow text-center"></h1>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-dumbbell"></i> 记录今日训练</h2>
                     </div>
-                    <button onclick="addExerciseToSession()" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 transition-colors rounded p-3 font-bold">+ 添加新动作</button>
-                    <button onclick="saveSession()" class="mt-2 w-full bg-green-600 hover:bg-green-500 transition-colors rounded p-3 font-bold text-lg">✓ 完成并保存本次训练</button>
-                </section>
-
-                <!-- 历史记录 -->
-                <section>
-                    <h2 class="text-xl font-semibold mb-4">历史记录</h2>
+                    
+                    <div id="current-session-container" class="space-y-4 mb-4">
+                        <!-- 动态内容 -->
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3 mt-6">
+                        <button onclick="addExerciseToSession()" class="btn btn-primary flex-1">
+                            <i class="fas fa-plus mr-2"></i> 添加新动作
+                        </button>
+                        <button id="save-session-button" onclick="saveSession()" class="btn btn-secondary flex-1">
+                            <i class="fas fa-save mr-2"></i> 完成并保存
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-history"></i> 历史记录</h2>
+                    </div>
+                    
                     <div id="history-container" class="space-y-4">
-                        <div id="loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>
+                        <div id="loader" class="hidden justify-center items-center py-8">
+                            <div class="loader"></div>
+                        </div>
+                        <!-- 历史记录内容 -->
                     </div>
-                </section>
+                </div>
             </div>
         </div>
 
-        <!-- 动作管理页 -->
+        <!-- 动作管理页面 -->
         <div id="exercise-management-page" class="page">
-            <header class="flex items-center p-4 bg-gray-900 sticky top-0 z-20">
-                <button onclick="showHomePage()" class="text-blue-400 text-2xl font-bold">&larr;</button>
-                <h1 class="text-2xl font-bold text-purple-400 mx-auto">动作管理</h1>
-                <div class="w-8"></div> <!-- Placeholder for alignment -->
-            </header>
-
-            <div class="p-4 space-y-8">
-                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">选择肌肉群</h2>
+            <div class="flex items-center mb-6">
+                <button onclick="showHomePage()" class="btn btn-action mr-4">
+                    <i class="fas fa-arrow-left mr-2"></i> 返回
+                </button>
+                <h1 class="text-2xl font-bold text-white flex-grow text-center">动作管理</h1>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-dumbbell"></i> 选择肌肉群</h2>
+                    </div>
+                    
                     <select id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)" 
-                            class="w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-400 text-lg">
+                            class="w-full mb-4">
                         <option value="">-- 请选择肌肉群 --</option>
-                        <option value="chest">胸部</option>
-                        <option value="back">背部</option>
+                        <option value="chest">胸 & 三头</option>
+                        <option value="back">背 & 二头</option>
                         <option value="shoulders">肩部</option>
-                        <option value="legs">腿部</option>
+                        <option value="legs">腿 & 核心</option>
                     </select>
-                </section>
-
-                <section class="bg-gray-700 p-4 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">动作列表</h2>
-                    <div id="exercise-list-container" class="space-y-2">
-                        <p class="text-gray-500 text-center py-4" id="no-exercises-message">请选择一个肌肉群。</p>
-                        <div id="exercise-list-loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-300">添加新动作</h3>
+                        <div class="flex gap-3">
+                            <input type="text" id="new-exercise-input" placeholder="新动作名称" 
+                                   class="flex-1">
+                            <button onclick="addNewExercise()" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i> 添加
+                            </button>
+                        </div>
                     </div>
-                    <div class="mt-4 flex gap-2">
-                        <input type="text" id="new-exercise-input" placeholder="新动作名称" 
-                               class="w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-purple-400">
-                        <button onclick="addNewExercise()" class="bg-purple-600 hover:bg-purple-500 transition-colors rounded p-2 font-bold whitespace-nowrap">添加</button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-list"></i> 动作列表</h2>
                     </div>
-                </section>
+                    
+                    <div id="exercise-list-container" class="space-y-3">
+                        <p class="text-gray-500 text-center py-8" id="no-exercises-message">
+                            <i class="fas fa-info-circle mr-2"></i>请选择一个肌肉群
+                        </p>
+                        <div id="exercise-list-loader" class="hidden justify-center items-center py-8">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 
-    <!-- 全局 Modal 弹窗 -->
-    <div id="modal" class="fixed inset-0 z-50 items-center justify-center p-4 modal-backdrop hidden">
-        <div class="bg-gray-700 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto modal-content">
-            <h3 id="modal-title" class="text-xl font-bold text-white">通知</h3>
-            <p id="modal-body" class="text-gray-300 mt-2">操作成功！</p>
-            <div class="mt-6 text-right" id="modal-actions">
-                <button id="modal-close" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">好的</button>
+    <!-- 模态框 -->
+    <div id="modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="modal-title" class="text-xl font-bold mb-3 text-white"></h3>
+            <p id="modal-body" class="text-gray-300 mb-6"></p>
+            <div class="text-right" id="modal-actions">
+                <button id="modal-close" class="btn btn-primary">好的</button>
             </div>
         </div>
     </div>
 
+    <!-- 原始JavaScript保持不变 -->
     <script>
-        const API_BASE_URL = 'xxx/api'; // 后端API的基础URL
+        const API_BASE_URL = '<your_backend>/api'; // 后端API的基础URL
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -151,14 +500,14 @@
 
             // 添加“取消”按钮
             const cancelButton = document.createElement('button');
-            cancelButton.className = 'bg-gray-500 hover:bg-gray-400 text-white font-bold py-2 px-4 rounded mr-2';
+            cancelButton.className = 'btn btn-action mr-3';
             cancelButton.textContent = '取消';
             cancelButton.onclick = defaultModalClose; // 点击取消关闭模态框并恢复默认按钮
             modalActions.appendChild(cancelButton);
 
             // 添加“确定”按钮
             const confirmButton = document.createElement('button');
-            confirmButton.className = 'bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded';
+            confirmButton.className = 'btn btn-secondary';
             confirmButton.textContent = '确定';
             confirmButton.onclick = () => {
                 defaultModalClose(); // 关闭模态框并恢复默认按钮
@@ -174,7 +523,7 @@
             modalActions.innerHTML = ''; // 清空所有自定义按钮
             const defaultOkButton = document.createElement('button');
             defaultOkButton.id = 'modal-close';
-            defaultOkButton.className = 'bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded';
+            defaultOkButton.className = 'btn btn-primary';
             defaultOkButton.textContent = '好的';
             defaultOkButton.onclick = defaultModalClose;
             modalActions.appendChild(defaultOkButton);
@@ -448,9 +797,19 @@
         }
 
         async function saveSession() {
+            const saveButton = document.getElementById('save-session-button');
+            saveButton.disabled = true; // Disable the button immediately
+            saveButton.textContent = '保存中...'; // Change button text to indicate loading state
+            saveButton.classList.remove('bg-green-600', 'hover:bg-green-500');
+            saveButton.classList.add('bg-gray-500'); // Optional: change color to gray
+
             const exerciseBlocks = document.querySelectorAll('.exercise-block');
             if (exerciseBlocks.length === 0) {
                 showModal('提示', '请至少添加一个训练动作。');
+                saveButton.disabled = false; // Re-enable button
+                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                saveButton.classList.remove('bg-gray-500');
+                saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                 return;
             }
 
@@ -459,6 +818,10 @@
                 const exerciseName = block.querySelector('.exercise-select').value;
                 if (!exerciseName || exerciseName === 'add_new') {
                     showModal('错误', '请为所有动作选择一个有效的名称。');
+                    saveButton.disabled = false; // Re-enable button
+                    saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                    saveButton.classList.remove('bg-gray-500');
+                    saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                     return;
                 }
 
@@ -472,8 +835,22 @@
                     let weight = weightInput.value.trim();
                     const reps = repsInput.value.trim();
 
-                    if (i === 0 && !weight) { showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); return; }
-                    if (!reps) { showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); return; }
+                    if (i === 0 && !weight) { 
+                        showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); 
+                        saveButton.disabled = false; // Re-enable button
+                        saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                        saveButton.classList.remove('bg-gray-500');
+                        saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
+                        return; 
+                    }
+                    if (!reps) { 
+                        showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); 
+                        saveButton.disabled = false; // Re-enable button
+                        saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                        saveButton.classList.remove('bg-gray-500');
+                        saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
+                        return; 
+                    }
                     
                     // 如果当前组没有输入重量，则使用上一组的有效重量
                     if (!weight) {
@@ -492,15 +869,26 @@
 
             if (exercisesData.length === 0) {
                 showModal('提示', '没有有效的训练数据可以保存。');
+                saveButton.disabled = false; // Re-enable button
+                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                saveButton.classList.remove('bg-gray-500');
+                saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                 return;
             }
+
+            // Set up a timeout for the fetch request
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 5000); // 5-second timeout
 
             try {
                 const response = await fetch(`${API_BASE_URL}/session`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ muscle_group: currentMuscleGroup, exercises_data: exercisesData }),
+                    signal: controller.signal // Associate the abort controller with the fetch request
                 });
+                clearTimeout(id); // Clear the timeout if the request completes in time
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || '保存失败');
@@ -512,7 +900,16 @@
                 localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
                 await loadHistory(); // 重新加载历史记录
             } catch (error) {
-                showModal('保存失败', error.message);
+                if (error.name === 'AbortError') {
+                    showModal('保存失败', '请求超时，请检查网络或稍后重试。');
+                } else {
+                    showModal('保存失败', error.message);
+                }
+            } finally {
+                saveButton.disabled = false; // Re-enable button
+                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                saveButton.classList.remove('bg-gray-500');
+                saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
             }
         }
 
