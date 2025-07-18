@@ -109,12 +109,59 @@
         }
         
         /* 网格布局 */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
+/* 修改网格布局部分 */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 手机端最小宽度改为140px */
+    gap: 1rem; /* 缩小间隙以适应小屏幕 */
+    margin-bottom: 2rem;
+}
+
+/* 手机端特定样式 */
+@media (max-width: 640px) {
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr); /* 固定两列布局 */
+    }
+    
+    /* 让动作管理卡片单独占据一行 */
+    .muscle-card:nth-last-child(1) {
+        grid-column: 1 / -1;
+    }
+    
+    /* 调整卡片高度以适应更小的屏幕 */
+    .muscle-card {
+        height: 160px;
+    }
+    
+    /* 调整图标和文字大小 */
+    .muscle-icon {
+        font-size: 2.5rem;
+    }
+    
+    .muscle-name {
+        font-size: 1.2rem;
+    }
+}
+
+/* 平板和桌面端保持原有样式 */
+@media (min-width: 768px) {
+    .grid-container {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .muscle-card {
+        height: 200px;
+    }
+    
+    .muscle-icon {
+        font-size: 3.5rem;
+    }
+    
+    .muscle-name {
+        font-size: 1.4rem;
+    }
+}
         
         /* 肌肉群卡片 */
         .muscle-card {
@@ -287,7 +334,7 @@
         }
         
         /* 响应式调整 */
-        @media (max-width: 768px) {
+        /* @media (max-width: 768px) {
             .grid-container {
                 grid-template-columns: 1fr;
             }
@@ -299,7 +346,7 @@
             .card {
                 padding: 1.25rem;
             }
-        }
+        } */
         
         /* 霓虹效果 */
         .neon-text {
@@ -315,6 +362,9 @@
             70% { box-shadow: 0 0 0 12px rgba(58, 134, 255, 0); }
             100% { box-shadow: 0 0 0 0 rgba(58, 134, 255, 0); }
         }
+
+
+        
     </style>
 </head>
 <body>
@@ -467,7 +517,7 @@
 
     <!-- 原始JavaScript保持不变 -->
     <script>
-        const API_BASE_URL = '<your_backend>/api'; // 后端API的基础URL
+        const API_BASE_URL = '<your_backend_address>/api'; // 后端API的基础URL
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -1197,4 +1247,4 @@
         document.addEventListener('DOMContentLoaded', () => showHomePage());
     </script>
 </body>
-</html>
+</html> 
