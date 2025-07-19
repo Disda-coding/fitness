@@ -101,6 +101,7 @@
             color: var(--primary);
             display: flex;
             align-items: center;
+            justify-content: center; /* 添加居中 */
         }
         
         .card-title i {
@@ -109,59 +110,71 @@
         }
         
         /* 网格布局 */
-/* 修改网格布局部分 */
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 手机端最小宽度改为140px */
-    gap: 1rem; /* 缩小间隙以适应小屏幕 */
-    margin-bottom: 2rem;
-}
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 手机端最小宽度改为140px */
+            gap: 1rem; /* 缩小间隙以适应小屏幕 */
+            margin-bottom: 2rem;
+        }
 
-/* 手机端特定样式 */
-@media (max-width: 640px) {
-    .grid-container {
-        grid-template-columns: repeat(2, 1fr); /* 固定两列布局 */
-    }
-    
-    /* 让动作管理卡片单独占据一行 */
-    .muscle-card:nth-last-child(1) {
-        grid-column: 1 / -1;
-    }
-    
-    /* 调整卡片高度以适应更小的屏幕 */
-    .muscle-card {
-        height: 160px;
-    }
-    
-    /* 调整图标和文字大小 */
-    .muscle-icon {
-        font-size: 2.5rem;
-    }
-    
-    .muscle-name {
-        font-size: 1.2rem;
-    }
-}
+        /* 手机端特定样式 */
+        @media (max-width: 640px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr); /* 固定两列布局 */
+            }
+            
+            /* 让动作管理卡片单独占据一行 */
+            .muscle-card:nth-last-child(1) {
+                grid-column: 1 / -1;
+            }
+            
+            /* 调整卡片高度以适应更小的屏幕 */
+            .muscle-card {
+                height: 160px;
+            }
+            
+            /* 调整图标和文字大小 */
+            .muscle-icon {
+                font-size: 2.5rem;
+            }
+            
+            .muscle-name {
+                font-size: 1.2rem;
+            }
 
-/* 平板和桌面端保持原有样式 */
-@media (min-width: 768px) {
-    .grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-    }
-    
-    .muscle-card {
-        height: 200px;
-    }
-    
-    .muscle-icon {
-        font-size: 3.5rem;
-    }
-    
-    .muscle-name {
-        font-size: 1.4rem;
-    }
-}
+            /* 动作管理页面的按钮样式 */
+            #exercise-management-page .flex.gap-3 {
+                flex-direction: column;
+            }
+            
+            #exercise-management-page .flex.gap-3 > * {
+                width: 100%;
+            }
+            
+            #exercise-management-page .flex.gap-3 > button {
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* 平板和桌面端保持原有样式 */
+        @media (min-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+            }
+            
+            .muscle-card {
+                height: 200px;
+            }
+            
+            .muscle-icon {
+                font-size: 3.5rem;
+            }
+            
+            .muscle-name {
+                font-size: 1.4rem;
+            }
+        }
         
         /* 肌肉群卡片 */
         .muscle-card {
@@ -279,6 +292,7 @@
             color: #e2e8f0;
             font-size: 1rem;
             transition: all 0.3s ease;
+            width: 100%; /* 确保宽度一致 */
         }
         
         input:focus, select:focus {
@@ -333,21 +347,6 @@
             to { transform: translateY(0); opacity: 1; }
         }
         
-        /* 响应式调整 */
-        /* @media (max-width: 768px) {
-            .grid-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .app-title {
-                font-size: 2rem;
-            }
-            
-            .card {
-                padding: 1.25rem;
-            }
-        } */
-        
         /* 霓虹效果 */
         .neon-text {
             text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
@@ -363,8 +362,30 @@
             100% { box-shadow: 0 0 0 0 rgba(58, 134, 255, 0); }
         }
 
-
+        /* 动作管理模块下拉菜单样式 */
+        #manage-muscle-select {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(74, 85, 104, 0.4);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
         
+        #manage-muscle-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.3);
+        }
+        
+        /* 动作管理模块标题居中 */
+        #exercise-management-page .card-header h2,
+        #exercise-management-page h3 {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -451,57 +472,59 @@
         </div>
 
         <!-- 动作管理页面 -->
-        <div id="exercise-management-page" class="page">
-            <div class="flex items-center mb-6">
-                <button onclick="showHomePage()" class="btn btn-action mr-4">
-                    <i class="fas fa-arrow-left mr-2"></i> 返回
-                </button>
-                <h1 class="text-2xl font-bold text-white flex-grow text-center">动作管理</h1>
+<!-- 动作管理页面部分代码 -->
+<div id="exercise-management-page" class="page">
+    <div class="flex items-center mb-6">
+        <button onclick="showHomePage()" class="btn btn-action mr-4">
+            <i class="fas fa-arrow-left mr-2"></i> 返回
+        </button>
+        <h1 class="text-2xl font-bold text-white flex-grow text-center">动作管理</h1>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-dumbbell"></i> 选择肌肉群</h2>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title"><i class="fas fa-dumbbell"></i> 选择肌肉群</h2>
-                    </div>
-                    
-                    <select id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)" 
-                            class="w-full mb-4">
-                        <option value="">-- 请选择肌肉群 --</option>
-                        <option value="chest">胸 & 三头</option>
-                        <option value="back">背 & 二头</option>
-                        <option value="shoulders">肩部</option>
-                        <option value="legs">腿 & 核心</option>
-                    </select>
-                    
-                    <div class="mt-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-300">添加新动作</h3>
-                        <div class="flex gap-3">
-                            <input type="text" id="new-exercise-input" placeholder="新动作名称" 
-                                   class="flex-1">
-                            <button onclick="addNewExercise()" class="btn btn-primary">
-                                <i class="fas fa-plus mr-1"></i> 添加
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title"><i class="fas fa-list"></i> 动作列表</h2>
-                    </div>
-                    
-                    <div id="exercise-list-container" class="space-y-3">
-                        <p class="text-gray-500 text-center py-8" id="no-exercises-message">
-                            <i class="fas fa-info-circle mr-2"></i>请选择一个肌肉群
-                        </p>
-                        <div id="exercise-list-loader" class="hidden justify-center items-center py-8">
-                            <div class="loader"></div>
-                        </div>
-                    </div>
+            <select id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)" 
+                    class="w-full mb-4 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
+                <option value="">-- 请选择肌肉群 --</option>
+                <option value="chest">胸 & 三头</option>
+                <option value="back">背 & 二头</option>
+                <option value="shoulders">肩部</option>
+                <option value="legs">腿 & 核心</option>
+            </select>
+            
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-3 text-gray-300 text-center">添加新动作</h3>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="new-exercise-input" placeholder="新动作名称" 
+                           class="flex-1 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
+                    <button onclick="addNewExercise()" class="btn btn-primary sm:w-auto w-full">
+                        <i class="fas fa-plus mr-1"></i> 添加
+                    </button>
                 </div>
             </div>
         </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-list"></i> 动作列表</h2>
+            </div>
+            
+            <div id="exercise-list-container" class="space-y-3">
+                <p class="text-gray-500 text-center py-8" id="no-exercises-message">
+                    <i class="fas fa-info-circle mr-2"></i>请选择一个肌肉群
+                </p>
+                <div id="exercise-list-loader" class="hidden justify-center items-center py-8">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
     </div>
 
     <!-- 模态框 -->
@@ -515,9 +538,9 @@
         </div>
     </div>
 
-    <!-- 原始JavaScript保持不变 -->
+    <!-- JavaScript部分保持不变 -->
     <script>
-        const API_BASE_URL = '<your_backend_address>/api'; // 后端API的基础URL
+        const API_BASE_URL = '/api'; // 后端API的基础URL
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -526,7 +549,7 @@
         const modal = document.getElementById('modal');
         const modalActions = document.getElementById('modal-actions'); // 模态框按钮容器
 
-        // 默认的“好的”按钮点击事件
+        // 默认的"好的"按钮点击事件
         function defaultModalClose() {
             modal.style.display = 'none';
             restoreDefaultModalButton(); // 确保每次关闭后恢复默认按钮
@@ -538,7 +561,7 @@
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = message;
             modal.style.display = 'flex';
-            restoreDefaultModalButton(); // 确保显示通知时是默认的“好的”按钮
+            restoreDefaultModalButton(); // 确保显示通知时是默认的"好的"按钮
         }
 
         // 用于确认操作的模态框
@@ -548,14 +571,14 @@
             
             modalActions.innerHTML = ''; // 清空所有按钮
 
-            // 添加“取消”按钮
+            // 添加"取消"按钮
             const cancelButton = document.createElement('button');
             cancelButton.className = 'btn btn-action mr-3';
             cancelButton.textContent = '取消';
             cancelButton.onclick = defaultModalClose; // 点击取消关闭模态框并恢复默认按钮
             modalActions.appendChild(cancelButton);
 
-            // 添加“确定”按钮
+            // 添加"确定"按钮
             const confirmButton = document.createElement('button');
             confirmButton.className = 'btn btn-secondary';
             confirmButton.textContent = '确定';
@@ -568,7 +591,7 @@
             modal.style.display = 'flex';
         }
 
-        // 恢复模态框到默认的“好的”按钮状态
+        // 恢复模态框到默认的"好的"按钮状态
         function restoreDefaultModalButton() {
             modalActions.innerHTML = ''; // 清空所有自定义按钮
             const defaultOkButton = document.createElement('button');
@@ -588,7 +611,7 @@
 
         function showHomePage() {
             showPage('home-page'); // 显示主页
-            // 当返回主页时，清除当前训练的LocalStorage数据，因为它不再是“未完成”的状态
+            // 当返回主页时，清除当前训练的LocalStorage数据，因为它不再是"未完成"的状态
             localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
             // 清空动作管理页面的选择
             document.getElementById('manage-muscle-select').value = '';
@@ -637,7 +660,7 @@
                 const exerciseSelect = block.querySelector('.exercise-select');
                 const exerciseName = exerciseSelect ? exerciseSelect.value : ''; 
                 
-                // 只有当动作名称有效且不为“添加新动作”时才保存
+                // 只有当动作名称有效且不为"添加新动作"时才保存
                 if (exerciseName && exerciseName !== 'add_new') {
                     const setsData = [];
                     const setElements = block.querySelectorAll('.set-item');
@@ -981,13 +1004,13 @@
             // 1. 清除所有之前的训练会话条目（历史记录块）
             historyContainer.querySelectorAll('.bg-gray-700\\/50').forEach(el => el.remove());
 
-            // 2. 清除之前可能存在的“暂无历史记录”消息
+            // 2. 清除之前可能存在的"暂无历史记录"消息
             const noHistoryMessage = document.getElementById('no-history-message');
             if (noHistoryMessage) {
                 noHistoryMessage.remove();
             }
 
-            // 3. 清除之前可能存在的“加载失败”消息
+            // 3. 清除之前可能存在的"加载失败"消息
             const loadErrorMessage = document.getElementById('load-error-message');
             if (loadErrorMessage) {
                 loadErrorMessage.remove();
@@ -1017,7 +1040,7 @@
 
 
                 if (sessions.length === 0) {
-                    // 如果没有历史记录，则添加“暂无历史记录”消息，并给它一个ID
+                    // 如果没有历史记录，则添加"暂无历史记录"消息，并给它一个ID
                     historyContainer.insertAdjacentHTML('beforeend', '<p id="no-history-message" class="text-gray-500 text-center py-4">暂无历史记录。</p>');
                     return;
                 }
@@ -1089,7 +1112,7 @@
             // 1. 清除所有之前的动作列表项（class="flex items-center justify-between"）
             exerciseListContainer.querySelectorAll('.flex.items-center.justify-between').forEach(el => el.remove());
 
-            // 2. 清除之前可能存在的“请选择一个肌肉群”或“该肌肉群暂无动作”消息
+            // 2. 清除之前可能存在的"请选择一个肌肉群"或"该肌肉群暂无动作"消息
             const noExercisesMessage = document.getElementById('no-exercises-message');
             if (noExercisesMessage) {
                 noExercisesMessage.remove();
@@ -1180,7 +1203,7 @@
                 showModal('成功', `动作 "${newExerciseName}" 已添加。`);
                 newExerciseInput.value = ''; // 清空输入框
                 await loadExercisesForManagement(muscle); // 重新加载列表
-                // 刷新训练页面的可用动作列表，以防用户切换过去
+                // 刷新训练页面的可用动作列表
                 currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
                 await loadAvailableExercises(); 
                 updateAllExerciseDropdowns();
@@ -1247,4 +1270,4 @@
         document.addEventListener('DOMContentLoaded', () => showHomePage());
     </script>
 </body>
-</html> 
+</html>
