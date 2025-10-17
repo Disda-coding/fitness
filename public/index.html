@@ -829,7 +829,10 @@
                 <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
-            addSetToExercise(exerciseId); // 自动为新动作添加第一组
+            // 自动为新动作添加5组
+            for (let i = 0; i < 5; i++) {
+                addSetToExercise(exerciseId);
+            }
             updateAllExerciseDropdowns(); // 更新新添加的下拉菜单
             saveSessionToLocalStorage(); // 添加新动作块后保存
         }
