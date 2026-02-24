@@ -3,6 +3,7 @@
  * - Manages custom exercises with a dropdown.
  * - Saves workouts as sessions (multiple exercises per session).
  * - Allows deleting workout sessions.
+ * - Manages common exercises (shared across all muscle groups).
  */
 
 import { Hono } from 'hono';
@@ -13,23 +14,33 @@ const app = new Hono().basePath('/api');
 // Configure CORS to allow requests from your frontend
 app.use('*', cors({
   origin: '*', // For production, you might want to restrict this to your domain
-  allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
 // --- API Endpoints for Custom Exercises ---
 
-// 1. Get all custom exercises for a specific muscle group
+// 1. Get all exercises for a specific muscle group (custom + common)
 app.get('/exercises/:muscle', async (c) => {
   const muscle = c.req.param('muscle');
   if (!muscle) {
     return c.json({ error: 'Muscle group is required' }, 400);
   }
   try {
-    const { results } = await c.env.DB.prepare(
+    // Get custom exercises
+    const { results: customResults } = await c.env.DB.prepare(
       "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? ORDER BY exercise_name"
     ).bind(muscle).all();
-    // Return a simple array of names
-    return c.json(results.map(r => r.exercise_name));
+    
+    // Get common exercises
+    const { results: commonResults } = await c.env.DB.prepare(
+      "SELECT exercise_name FROM common_exercises ORDER BY exercise_name"
+    ).all();
+    
+    const custom = customResults.map(r => r.exercise_name);
+    const common = commonResults.map(r => r.exercise_name);
+    const all = [...custom, ...common];
+    
+    return c.json({ custom, common, all });
   } catch (e) {
     console.error(e);
     return c.json({ error: e.message }, 500);
@@ -43,7 +54,6 @@ app.post('/exercises', async (c) => {
     if (!muscle_group || !exercise_name) {
       return c.json({ error: 'Missing required fields' }, 400);
     }
-    // 'INSERT OR IGNORE' is used to prevent errors if the exercise already exists, fulfilling the UNIQUE constraint gracefully.
     await c.env.DB.prepare(
       "INSERT OR IGNORE INTO custom_exercises (muscle_group, exercise_name) VALUES (?, ?)"
     ).bind(muscle_group, exercise_name.trim()).run();
@@ -55,10 +65,150 @@ app.post('/exercises', async (c) => {
   }
 });
 
+// 3. Update exercise name (for both custom and common exercises)
+app.put('/exercises', async (c) => {
+  try {
+    const { muscle_group, old_name, new_name } = await c.req.json();
+    if (!old_name || !new_name) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    const trimmedNewName = new_name.trim();
+    
+    // First try to update in custom_exercises
+    if (muscle_group) {
+      const customResult = await c.env.DB.prepare(
+        "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ?"
+      ).bind(trimmedNewName, muscle_group, old_name).run();
+      
+      if (customResult.success && customResult.meta.changes > 0) {
+        return c.json({ success: true, message: 'Custom exercise updated successfully.' });
+      }
+    }
+    
+    // If not found in custom, try to update in common_exercises
+    const commonResult = await c.env.DB.prepare(
+      "UPDATE common_exercises SET exercise_name = ? WHERE exercise_name = ?"
+    ).bind(trimmedNewName, old_name).run();
+    
+    if (commonResult.success && commonResult.meta.changes > 0) {
+      return c.json({ success: true, message: 'Common exercise updated successfully.' });
+    }
+    
+    return c.json({ error: 'Exercise not found' }, 404);
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// 4. Delete a custom exercise
+app.delete('/exercises', async (c) => {
+  try {
+    const { muscle_group, exercise_name } = await c.req.json();
+    if (!muscle_group || !exercise_name) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    const { success } = await c.env.DB.prepare(
+      "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ?"
+    ).bind(muscle_group, exercise_name).run();
+    
+    if (success) {
+      return c.json({ success: true, message: 'Exercise deleted successfully.' });
+    } else {
+      return c.json({ error: 'Failed to delete exercise' }, 500);
+    }
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// --- API Endpoints for Common Exercises ---
+
+// 5. Get all common exercises
+app.get('/common-exercises', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      "SELECT exercise_name FROM common_exercises ORDER BY exercise_name"
+    ).all();
+    
+    return c.json(results.map(r => r.exercise_name));
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// 6. Add a new common exercise
+app.post('/common-exercises', async (c) => {
+  try {
+    const { exercise_name } = await c.req.json();
+    if (!exercise_name) {
+      return c.json({ error: 'Exercise name is required' }, 400);
+    }
+    
+    await c.env.DB.prepare(
+      "INSERT OR IGNORE INTO common_exercises (exercise_name) VALUES (?)"
+    ).bind(exercise_name.trim()).run();
+    
+    return c.json({ success: true, message: 'Common exercise added successfully.' });
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// 7. Update a common exercise
+app.put('/common-exercises', async (c) => {
+  try {
+    const { old_name, new_name } = await c.req.json();
+    if (!old_name || !new_name) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+    
+    const { success, meta } = await c.env.DB.prepare(
+      "UPDATE common_exercises SET exercise_name = ? WHERE exercise_name = ?"
+    ).bind(new_name.trim(), old_name).run();
+    
+    if (success && meta.changes > 0) {
+      return c.json({ success: true, message: 'Common exercise updated successfully.' });
+    } else {
+      return c.json({ error: 'Exercise not found or no changes made' }, 404);
+    }
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// 8. Delete a common exercise
+app.delete('/common-exercises', async (c) => {
+  try {
+    const { exercise_name } = await c.req.json();
+    if (!exercise_name) {
+      return c.json({ error: 'Exercise name is required' }, 400);
+    }
+    
+    const { success, meta } = await c.env.DB.prepare(
+      "DELETE FROM common_exercises WHERE exercise_name = ?"
+    ).bind(exercise_name).run();
+    
+    if (success && meta.changes > 0) {
+      return c.json({ success: true, message: 'Common exercise deleted successfully.' });
+    } else {
+      return c.json({ error: 'Exercise not found' }, 404);
+    }
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
 
 // --- API Endpoints for Workout Sessions ---
 
-// 3. Get workout history (all sessions) for a muscle group
+// 9. Get workout history (all sessions) for a muscle group
 app.get('/history/:muscle', async (c) => {
   const muscle = c.req.param('muscle');
   if (!muscle) {
@@ -86,7 +236,7 @@ app.get('/history/:muscle', async (c) => {
   }
 });
 
-// 4. Save a new workout session
+// 10. Save a new workout session
 app.post('/session', async (c) => {
   try {
     const { muscle_group, exercises_data } = await c.req.json();
@@ -111,7 +261,7 @@ app.post('/session', async (c) => {
   }
 });
 
-// 5. Delete a specific workout session
+// 11. Delete a specific workout session
 app.delete('/session/:id', async (c) => {
   const sessionId = c.req.param('id');
   if (!sessionId) {
@@ -125,7 +275,6 @@ app.delete('/session/:id', async (c) => {
     if (success) {
       return c.json({ success: true, message: 'Session deleted successfully!' });
     } else {
-      // This case might happen if the ID doesn't exist, which is fine.
       return c.json({ success: true, message: 'Session already deleted or not found.' });
     }
   } catch (e) {

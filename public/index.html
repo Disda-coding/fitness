@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -19,6 +19,16 @@
             --card-bg: #1e293b;
         }
         
+        /* Light mode variables - iOS 26 Liquid Glass style */
+        [data-theme="light"] {
+            --primary: #007aff;
+            --secondary: #ff375f;
+            --accent: #bf5af2;
+            --dark: #f5f5f7;
+            --darker: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.72);
+        }
+        
         body { 
             font-family: 'Noto Sans SC', sans-serif; 
             -webkit-tap-highlight-color: transparent; 
@@ -26,6 +36,416 @@
             color: #e2e8f0;
             min-height: 100vh;
             overflow-x: hidden;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+        
+        /* Light mode body */
+        [data-theme="light"] body {
+            background: linear-gradient(180deg, #f0f0f5 0%, #e8e8ed 50%, #f5f5f7 100%);
+            color: #1c1c1e;
+        }
+        
+        /* Fixed Header */
+        .fixed-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: inherit;
+            padding: 1rem;
+            margin: -1rem;
+            margin-bottom: 1rem;
+        }
+        
+        [data-theme="light"] .fixed-header {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="dark"] .fixed-header {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        [data-theme="dark"] .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fbbf24;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        [data-theme="dark"] .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        [data-theme="light"] .theme-toggle {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1c1c1e;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        [data-theme="light"] .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+        
+        /* Light mode card - Liquid Glass */
+        [data-theme="light"] .card {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.02),
+                0 12px 24px rgba(0, 0, 0, 0.04),
+                inset 0 0.5px 0 rgba(255, 255, 255, 0.8),
+                inset 0 -0.5px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 8px 12px rgba(0, 0, 0, 0.03),
+                0 16px 32px rgba(0, 0, 0, 0.06),
+                inset 0 0.5px 0 rgba(255, 255, 255, 0.9),
+                inset 0 -0.5px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .card-header {
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+        }
+        
+        [data-theme="light"] .card-title {
+            color: #1c1c1e;
+        }
+        
+        /* Light mode Muscle Card - Liquid Glass */
+        [data-theme="light"] .muscle-card {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.02),
+                0 12px 24px rgba(0, 0, 0, 0.04),
+                inset 0 0.5px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        [data-theme="light"] .muscle-card::before {
+            background: linear-gradient(45deg, var(--primary), var(--accent), var(--secondary));
+            opacity: 0;
+        }
+        
+        [data-theme="light"] .muscle-card:hover::before {
+            opacity: 0.5;
+        }
+        
+        [data-theme="light"] .muscle-card:hover {
+            box-shadow: 
+                0 8px 12px rgba(0, 0, 0, 0.03),
+                0 16px 32px rgba(0, 0, 0, 0.06),
+                inset 0 0.5px 0 rgba(255, 255, 255, 0.9);
+        }
+        
+        [data-theme="light"] .muscle-name {
+            color: #1c1c1e;
+        }
+        
+        /* Light mode Buttons */
+        [data-theme="light"] .btn-primary {
+            background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+        }
+        
+        [data-theme="light"] .btn-primary:hover {
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+        }
+        
+        [data-theme="light"] .btn-secondary {
+            background: linear-gradient(180deg, #bf5af2 0%, #a855f7 100%);
+            box-shadow: 0 2px 8px rgba(191, 90, 242, 0.25);
+        }
+        
+        [data-theme="light"] .btn-secondary:hover {
+            box-shadow: 0 4px 12px rgba(191, 90, 242, 0.35);
+        }
+        
+        [data-theme="light"] .btn-action {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(0, 0, 0, 0.15);
+            color: #1c1c1e;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .btn-action:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Light mode Form Elements */
+        [data-theme="light"] input,
+        [data-theme="light"] select {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(0, 0, 0, 0.15);
+            color: #1c1c1e;
+        }
+        
+        [data-theme="light"] input:focus,
+        [data-theme="light"] select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        [data-theme="light"] input::placeholder {
+            color: rgba(60, 60, 67, 0.5);
+        }
+        
+        [data-theme="light"] select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231c1c1e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+        
+        [data-theme="light"] select option {
+            background: rgba(255, 255, 255, 0.98);
+            color: #1c1c1e;
+            padding: 8px;
+        }
+        
+        [data-theme="light"] select option:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+        
+        /* Light mode Modal */
+        [data-theme="light"] .modal-backdrop {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        [data-theme="light"] .modal-content {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.15),
+                inset 0 0.5px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Light mode History Item */
+        [data-theme="light"] .history-item {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="light"] .history-item:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+        
+        /* Light mode Exercise Block */
+        [data-theme="light"] .exercise-block {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Light mode History Session Item */
+        [data-theme="light"] .history-session {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 0.5px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="light"] .history-session:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+        
+        [data-theme="light"] .history-session h3 {
+            color: #007aff !important;
+        }
+        
+        [data-theme="light"] .history-session .text-white {
+            color: #1c1c1e !important;
+        }
+        
+        [data-theme="light"] .history-session .text-gray-300 {
+            color: rgba(60, 60, 67, 0.8) !important;
+        }
+        
+        [data-theme="light"] .history-session .border-gray-600 {
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Light mode Add Set Button */
+        [data-theme="light"] .add-set-btn {
+            background: rgba(255, 255, 255, 0.85) !important;
+            color: #007aff !important;
+            border: 0.5px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="light"] .add-set-btn:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-color: #007aff;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+        }
+        
+        /* Light mode Text Colors */
+        [data-theme="light"] .text-white {
+            color: #1c1c1e !important;
+        }
+        
+        [data-theme="light"] .text-gray-300,
+        [data-theme="light"] .text-gray-400 {
+            color: rgba(60, 60, 67, 0.8) !important;
+        }
+        
+        [data-theme="light"] .text-gray-500 {
+            color: rgba(60, 60, 67, 0.6) !important;
+        }
+        
+        /* Light mode Exercise Management Page */
+        [data-theme="light"] .exercise-item {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="light"] .exercise-item:hover {
+            background: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+        
+        [data-theme="light"] .exercise-item .text-white {
+            color: #1c1c1e !important;
+        }
+        
+        [data-theme="light"] .common-exercise-item {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.05) !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+        
+        [data-theme="light"] .common-exercise-item:hover {
+            background: rgba(255, 255, 255, 0.85) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="light"] .common-exercise-item .text-white {
+            color: #1c1c1e !important;
+        }
+        
+        /* Light mode Edit/Delete buttons in exercise items */
+        [data-theme="light"] .exercise-edit-btn {
+            color: #007aff !important;
+            background: transparent !important;
+            border: none;
+        }
+        
+        [data-theme="light"] .exercise-edit-btn:hover {
+            color: #0056b3 !important;
+        }
+        
+        [data-theme="light"] .exercise-delete-btn {
+            color: #ff375f !important;
+            background: transparent !important;
+            border: none;
+        }
+        
+        [data-theme="light"] .exercise-delete-btn:hover {
+            color: #cc294c !important;
+        }
+        
+        /* Light mode common exercise edit/delete buttons */
+        [data-theme="light"] .common-edit-btn {
+            color: #007aff !important;
+            background: transparent !important;
+            border: none;
+        }
+        
+        [data-theme="light"] .common-edit-btn:hover {
+            color: #0056b3 !important;
+        }
+        
+        [data-theme="light"] .common-delete-btn {
+            color: #ff375f !important;
+            background: transparent !important;
+            border: none;
+        }
+        
+        [data-theme="light"] .common-delete-btn:hover {
+            color: #cc294c !important;
+        }
+        
+        /* Light mode Loader */
+        [data-theme="light"] .loader {
+            border-color: rgba(0, 0, 0, 0.1);
+            border-top-color: var(--primary);
+        }
+        
+        /* Light mode Dropdown Options */
+        [data-theme="light"] select option {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1c1c1e;
+        }
+        
+        /* Light mode Scrollbar */
+        [data-theme="light"] ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        [data-theme="light"] ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        
+        [data-theme="light"] ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+        
+        [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
         }
         
         .app-container {
@@ -50,8 +470,50 @@
         .app-header {
             text-align: center;
             padding: 1.5rem 1rem;
-            position: relative;
+            position: sticky;
+            top: 0;
+            z-index: 50;
             margin-bottom: 1.5rem;
+            margin-left: -1rem;
+            margin-right: -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        [data-theme="dark"] .app-header {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        [data-theme="light"] .app-header {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Page Header - Fixed with blur */
+        .page-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem;
+            margin: -1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        [data-theme="dark"] .page-header {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        [data-theme="light"] .page-header {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
         }
         
         .app-title {
@@ -109,23 +571,39 @@
             font-size: 1.3rem;
         }
         
-        /* 网格布局 */
+        /* 网格布局 - 默认2列 */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 手机端最小宽度改为140px */
-            gap: 1rem; /* 缩小间隙以适应小屏幕 */
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
             margin-bottom: 2rem;
+        }
+
+        /* 平板端 - 保持2列，不要显示4列 */
+        @media (min-width: 641px) and (max-width: 1023px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.25rem;
+            }
+            
+            .muscle-card {
+                height: 180px;
+            }
+        }
+
+        /* 桌面端 - 3列布局 */
+        @media (min-width: 1024px) {
+            .grid-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.5rem;
+            }
         }
 
         /* 手机端特定样式 */
         @media (max-width: 640px) {
-            .grid-container {
-                grid-template-columns: repeat(2, 1fr); /* 固定两列布局 */
-            }
-            
-            /* 让动作管理卡片单独占据一行 */
-            .muscle-card:nth-last-child(1) {
-                grid-column: 1 / -1;
+            /* 所有卡片保持2列布局，不独占一行 */
+            .muscle-card {
+                grid-column: auto !important;
             }
             
             /* 调整卡片高度以适应更小的屏幕 */
@@ -156,13 +634,23 @@
             }
         }
 
-        /* 平板和桌面端保持原有样式 */
-        @media (min-width: 768px) {
-            .grid-container {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1.5rem;
+        /* 平板端卡片样式 */
+        @media (min-width: 641px) and (max-width: 1023px) {
+            .muscle-card {
+                height: 180px;
             }
             
+            .muscle-icon {
+                font-size: 3rem;
+            }
+            
+            .muscle-name {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* 桌面端卡片样式 */
+        @media (min-width: 1024px) {
             .muscle-card {
                 height: 200px;
             }
@@ -381,6 +869,42 @@
             box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.3);
         }
         
+        /* Light mode manage-muscle-select */
+        [data-theme="light"] #manage-muscle-select {
+            background: rgba(255, 255, 255, 0.85);
+            border: 0.5px solid rgba(0, 0, 0, 0.15);
+            color: #1c1c1e;
+        }
+        
+        [data-theme="light"] #manage-muscle-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        }
+        
+        [data-theme="light"] #manage-muscle-select option {
+            background: rgba(255, 255, 255, 0.98);
+            color: #1c1c1e;
+        }
+        
+        /* Light mode exercise management inputs */
+        [data-theme="light"] #new-exercise-input,
+        [data-theme="light"] #new-common-exercise-input {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border: 0.5px solid rgba(0, 0, 0, 0.15) !important;
+            color: #1c1c1e !important;
+        }
+        
+        [data-theme="light"] #new-exercise-input:focus,
+        [data-theme="light"] #new-common-exercise-input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15) !important;
+        }
+        
+        [data-theme="light"] #new-exercise-input::placeholder,
+        [data-theme="light"] #new-common-exercise-input::placeholder {
+            color: rgba(60, 60, 67, 0.5) !important;
+        }
+        
         /* 动作管理模块标题居中 */
         #exercise-management-page .card-header h2,
         #exercise-management-page h3 {
@@ -389,6 +913,11 @@
     </style>
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+        <i class="fas fa-sun" id="theme-icon"></i>
+    </button>
+    
     <div class="app-container">
         <!-- 主页 -->
         <div id="home-page" class="page active">
@@ -422,6 +951,11 @@
                     <div class="muscle-icon">⚙️</div>
                     <div class="muscle-name">动作管理</div>
                 </div>
+                
+                <div class="muscle-card" onclick="showWorkoutPlannerPage()">
+                    <div class="muscle-icon">📊</div>
+                    <div class="muscle-name">训练计划</div>
+                </div>
             </div>
             
      
@@ -429,7 +963,7 @@
 
         <!-- 训练页面 -->
         <div id="training-page" class="page">
-            <div class="flex items-center mb-6">
+            <div class="page-header flex items-center mb-6">
                 <button onclick="showHomePage()" class="btn btn-action mr-4">
                     <i class="fas fa-arrow-left mr-2"></i> 返回
                 </button>
@@ -474,7 +1008,7 @@
         <!-- 动作管理页面 -->
 <!-- 动作管理页面部分代码 -->
 <div id="exercise-management-page" class="page">
-    <div class="flex items-center mb-6">
+    <div class="page-header flex items-center mb-6">
         <button onclick="showHomePage()" class="btn btn-action mr-4">
             <i class="fas fa-arrow-left mr-2"></i> 返回
         </button>
@@ -523,7 +1057,75 @@
             </div>
         </div>
     </div>
+    
+    <!-- 公用动作管理 -->
+    <div class="card mt-6">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-globe"></i> 公用动作管理</h2>
+            <p class="text-gray-400 text-sm mt-1">公用动作可在所有肌肉群训练中使用</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <input type="text" id="new-common-exercise-input" placeholder="新公用动作名称" 
+                   class="flex-1 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
+            <button onclick="addCommonExercise()" class="btn btn-secondary sm:w-auto w-full">
+                <i class="fas fa-plus mr-1"></i> 添加公用动作
+            </button>
+        </div>
+        
+        <div id="common-exercises-container" class="space-y-2">
+            <div id="common-exercises-loader" class="flex justify-center items-center py-4">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
 </div>
+
+        <!-- 训练计划计算器页面 -->
+        <div id="workout-planner-page" class="page">
+            <div class="page-header flex items-center mb-6">
+                <button onclick="showHomePage()" class="btn btn-action mr-4">
+                    <i class="fas fa-arrow-left mr-2"></i> 返回
+                </button>
+                <h1 class="text-2xl font-bold text-white flex-grow text-center">训练计划计算器</h1>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-calculator"></i> 输入目标重量</h2>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-300 mb-2">目标重量 (kg)</label>
+                            <input type="number" id="target-weight" placeholder="例如: 100" 
+                                   class="w-full bg-gray-800 border border-gray-600 rounded-xl p-3 text-white text-lg"
+                                   oninput="calculateWorkoutPlan()">
+                        </div>
+                        
+                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-600">
+                            <h3 class="text-blue-300 font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>计算说明</h3>
+                            <p class="text-gray-400 text-sm">
+                                根据你的目标重量，系统会生成渐进式训练计划，从70%开始逐步提升到目标重量。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-list-ol"></i> 训练计划</h2>
+                    </div>
+                    
+                    <div id="workout-plan-result" class="space-y-3">
+                        <p class="text-gray-500 text-center py-8">
+                            <i class="fas fa-calculator mr-2"></i>请输入目标重量查看训练计划
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 </div>
     </div>
 
@@ -540,10 +1142,67 @@
 
     <!-- JavaScript部分保持不变 -->
     <script>
-        const API_BASE_URL = '/api'; // 后端API的基础URL
+        const API_BASE_URL = ''; // 后端API的基础URL
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
+
+        // --- Theme Management ---
+        function getSystemTheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'dark';
+        }
+
+        function getTimeBasedTheme() {
+            const hour = new Date().getHours();
+            return (hour >= 6 && hour < 18) ? 'light' : 'dark';
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            let theme;
+            
+            if (savedTheme) {
+                theme = savedTheme;
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
+                theme = getSystemTheme();
+            } else {
+                theme = getTimeBasedTheme();
+            }
+            
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeIcon(theme);
+            
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem('theme')) {
+                        const newTheme = e.matches ? 'dark' : 'light';
+                        document.documentElement.setAttribute('data-theme', newTheme);
+                        updateThemeIcon(newTheme);
+                    }
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        // Initialize theme on page load
+        initTheme();
 
         // --- 模态框 (Modal) 逻辑 ---
         const modal = document.getElementById('modal');
@@ -642,13 +1301,283 @@
             showPage('exercise-management-page');
             // 每次进入管理页面时，清除上次选择的肌肉群，并重置列表
             document.getElementById('manage-muscle-select').value = '';
-            // 确保在重置内容时，loader元素不被移除，或者在需要时重新插入
+            // 重置右侧动作列表容器
             const exerciseListContainer = document.getElementById('exercise-list-container');
-            const initialContent = '<p class="text-gray-500 text-center py-4" id="no-exercises-message">请选择一个肌肉群。</p><div id="exercise-list-loader" class="hidden justify-center items-center py-8"><div class="loader"></div></div>';
-            exerciseListContainer.innerHTML = initialContent; // 重置内容
-            // 再次获取loader的引用，确保它是最新的DOM元素
-            let exerciseListLoader = document.getElementById('exercise-list-loader');
-            if(exerciseListLoader) exerciseListLoader.style.display = 'none'; // 确保初始是隐藏的
+            exerciseListContainer.innerHTML = `
+                <p class="text-gray-500 text-center py-8" id="no-exercises-message">
+                    <i class="fas fa-info-circle mr-2"></i>请选择一个肌肉群查看动作
+                </p>
+                <div id="exercise-list-loader" class="hidden justify-center items-center py-8">
+                    <div class="loader"></div>
+                </div>
+            `;
+            // 加载公用动作列表
+            await loadCommonExercises();
+        }
+
+        function showWorkoutPlannerPage() {
+            showPage('workout-planner-page');
+            // 清空之前的输入和结果
+            document.getElementById('target-weight').value = '';
+            document.getElementById('workout-plan-result').innerHTML = `
+                <p class="text-gray-500 text-center py-8">
+                    <i class="fas fa-calculator mr-2"></i>请输入目标重量查看训练计划
+                </p>
+            `;
+        }
+
+        function calculateWorkoutPlan() {
+            const targetWeightInput = document.getElementById('target-weight');
+            const resultContainer = document.getElementById('workout-plan-result');
+            const targetWeight = parseFloat(targetWeightInput.value);
+
+            if (!targetWeight || targetWeight <= 0) {
+                resultContainer.innerHTML = `
+                    <p class="text-gray-500 text-center py-8">
+                        <i class="fas fa-calculator mr-2"></i>请输入目标重量查看训练计划
+                    </p>
+                `;
+                return;
+            }
+
+            // 定义训练计划模板 (百分比, 组数, 次数, 是否减载)
+            const planTemplate = [
+                { percent: 0.70, sets: 5, reps: 10, deload: false },
+                { percent: 0.725, sets: 4, reps: 10, deload: false },
+                { percent: 0.75, sets: 4, reps: 8, deload: false },
+                { percent: 0.775, sets: 3, reps: 8, deload: false },
+                { percent: 0.80, sets: 3, reps: 2, deload: true },
+                { percent: 0.825, sets: 5, reps: 5, deload: false },
+                { percent: 0.875, sets: 3, reps: 5, deload: false },
+                { percent: 0.90, sets: 3, reps: 3, deload: false },
+                { percent: 0.95, sets: 2, reps: 2, deload: false }
+            ];
+
+            // 计算每个阶段的重量 (按照2.5kg的倍数取整)
+            let plan = planTemplate.map((stage, index) => {
+                const weight = Math.round((targetWeight * stage.percent) / 2.5) * 2.5;
+                return {
+                    week: index + 1,
+                    weight: weight,
+                    sets: stage.sets,
+                    reps: stage.reps,
+                    deload: stage.deload
+                };
+            });
+
+            // 添加最后一周目标周 (100% 目标重量)
+            plan.push({
+                week: 10,
+                weight: targetWeight,
+                sets: 1,
+                reps: 1,
+                deload: false,
+                isTarget: true
+            });
+
+            // 生成HTML
+            let html = '';
+            plan.forEach((stage, index) => {
+                const isLast = index === plan.length - 1;
+                const isTargetWeek = stage.isTarget || index === plan.length - 1;
+                const deloadBadge = stage.deload ? '<span class="ml-2 px-2 py-1 bg-yellow-600 text-yellow-100 text-xs rounded">减载</span>' : '';
+                const targetBadge = isTargetWeek ? '<span class="ml-2 px-2 py-1 bg-green-600 text-green-100 text-xs rounded">目标</span>' : '';
+                
+                html += `
+                    <div class="bg-gray-800 p-4 rounded-lg border ${isTargetWeek ? 'border-green-500 bg-green-900/20' : 'border-gray-600'} ${stage.deload ? 'border-yellow-600/50' : ''}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 text-sm">第 ${stage.week} 周</span>
+                            <div>${deloadBadge}${targetBadge}</div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-2xl font-bold text-white">${stage.weight.toFixed(1)} kg</div>
+                            <div class="text-right">
+                                <div class="text-lg text-blue-300">${stage.sets} 组 × ${stage.reps} 次</div>
+                                <div class="text-xs text-gray-500">总次数: ${stage.sets * stage.reps}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 添加统计信息
+            const totalSets = plan.reduce((sum, s) => sum + s.sets, 0);
+            const totalReps = plan.reduce((sum, s) => sum + s.sets * s.reps, 0);
+            
+            html += `
+                <div class="mt-4 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-blue-300"><i class="fas fa-chart-bar mr-2"></i>计划统计</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mt-3 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-white">${plan.length}</div>
+                            <div class="text-xs text-gray-400">训练周数</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white">${totalSets}</div>
+                            <div class="text-xs text-gray-400">总组数</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white">${totalReps}</div>
+                            <div class="text-xs text-gray-400">总次数</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            resultContainer.innerHTML = html;
+        }
+
+        // --- 公用动作管理 ---
+        let commonExercises = [];
+
+        async function loadCommonExercises() {
+            const container = document.getElementById('common-exercises-container');
+            let loader = document.getElementById('common-exercises-loader');
+            
+            try {
+                if (loader) loader.classList.remove('hidden');
+                
+                const response = await fetch(`${API_BASE_URL}/common-exercises`);
+                if (!response.ok) throw new Error('加载公用动作失败');
+                
+                commonExercises = await response.json();
+                renderCommonExercises();
+            } catch (error) {
+                console.error('Error loading common exercises:', error);
+                container.innerHTML = `
+                    <p class="text-red-400 text-center py-4">
+                        <i class="fas fa-exclamation-circle mr-2"></i>加载失败，请刷新重试
+                    </p>
+                `;
+            } finally {
+                if (loader) loader.classList.add('hidden');
+            }
+        }
+
+        function renderCommonExercises() {
+            const container = document.getElementById('common-exercises-container');
+            
+            if (commonExercises.length === 0) {
+                container.innerHTML = `
+                    <p class="text-gray-500 text-center py-4">
+                        <i class="fas fa-inbox mr-2"></i>暂无公用动作
+                    </p>
+                `;
+                return;
+            }
+            
+            container.innerHTML = commonExercises.map(exercise => `
+                <div class="common-exercise-item flex items-center justify-between p-3 rounded-xl bg-gray-700/50 hover:bg-gray-700 transition-colors">
+                    <span class="text-white font-medium">
+                        <i class="fas fa-globe text-purple-400 mr-2"></i>${exercise}
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="editCommonExercise('${exercise}')" 
+                                class="common-edit-btn text-blue-400 hover:text-blue-300 p-2 transition-colors"
+                                title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteCommonExercise('${exercise}')" 
+                                class="common-delete-btn text-red-400 hover:text-red-300 p-2 transition-colors"
+                                title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function editCommonExercise(oldName) {
+            const newName = prompt(`编辑公用动作名称:`, oldName);
+            if (!newName || newName.trim() === '' || newName.trim() === oldName) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_name: oldName, new_name: newName.trim() })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '更新失败');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showModal('成功', `已更新公用动作: ${newName.trim()}`);
+                    await loadCommonExercises();
+                } else {
+                    showModal('错误', data.error || '更新失败');
+                }
+            } catch (error) {
+                console.error('Error editing common exercise:', error);
+                showModal('错误', error.message || '网络错误，请重试');
+            }
+        }
+
+        async function addCommonExercise() {
+            const input = document.getElementById('new-common-exercise-input');
+            const exerciseName = input.value.trim();
+            
+            if (!exerciseName) {
+                showModal('提示', '请输入动作名称');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exercise_name: exerciseName })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    input.value = '';
+                    await loadCommonExercises();
+                    showModal('成功', `已添加公用动作: ${exerciseName}`);
+                } else {
+                    showModal('错误', data.error || '添加失败');
+                }
+            } catch (error) {
+                console.error('Error adding common exercise:', error);
+                showModal('错误', '网络错误，请重试');
+            }
+        }
+
+        async function deleteCommonExercise(exerciseName) {
+            showConfirmModal(
+                '确认删除',
+                `确定要删除公用动作 "${exerciseName}" 吗？`,
+                async () => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ exercise_name: exerciseName })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            await loadCommonExercises();
+                            showModal('成功', `已删除公用动作: ${exerciseName}`);
+                        } else {
+                            showModal('错误', data.error || '删除失败');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting common exercise:', error);
+                        showModal('错误', '网络错误，请重试');
+                    }
+                }
+            );
         }
 
         // --- LocalStorage 数据管理 ---
@@ -715,7 +1644,7 @@
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
-                                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
                             `;
                             document.getElementById('current-session-container').appendChild(exerciseDiv);
 
@@ -756,7 +1685,9 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
                 if (!response.ok) throw new Error('加载动作列表失败');
-                availableExercises = await response.json();
+                const data = await response.json();
+                // 后端返回 { custom: [...], common: [...], all: [...] }
+                availableExercises = data.all || [];
             } catch (error) {
                 console.error(error);
                 showModal('错误', '加载预设动作列表失败。');
@@ -826,7 +1757,7 @@
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
-                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
+                <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn mt-2 w-full text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
             // 自动为新动作添加5组
@@ -1051,7 +1982,7 @@
                 let html = '';
                 sessions.forEach(session => {
                     html += `
-                        <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
+                        <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
                             <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
                                 <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
                                 <button onclick="deleteSession(${session.session_id})" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
@@ -1148,29 +2079,49 @@
                     const errorData = await response.json();
                     throw new Error(errorData.error || '加载动作列表失败');
                 }
-                const exercises = await response.json();
+                const data = await response.json();
+                // 后端返回 { custom: [...], common: [...], all: [...] }
+                // 这里只显示自定义动作，公用动作在单独区域管理
+                const customExercises = data.custom || [];
+                const commonExercises = data.common || [];
 
                 if (exerciseListLoader) exerciseListLoader.style.display = 'none'; // 隐藏加载动画
                 else console.warn("Management loader element became null while fetching data.");
 
 
-                if (exercises.length === 0) {
+                if (customExercises.length === 0 && commonExercises.length === 0) {
                     exerciseListContainer.insertAdjacentHTML('beforeend', '<p class="text-gray-500 text-center py-4" id="no-exercises-message">该肌肉群暂无动作，请添加。</p>');
                     return;
                 }
 
                 let html = '';
-                exercises.forEach(ex => {
-                    html += `
-                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-600">
-                            <span class="text-white text-lg flex-grow mr-2">${ex}</span>
-                            <div class="flex gap-2">
-                                <button onclick="editExercise('${muscle}', '${ex}')" class="bg-blue-600 hover:bg-blue-500 text-white py-1 px-3 rounded text-sm">编辑</button>
-                                <button onclick="deleteExerciseFromManagement('${muscle}', '${ex}')" class="bg-red-600 hover:bg-red-500 text-white py-1 px-3 rounded text-sm">删除</button>
+                
+                // 只显示自定义动作（公用动作在单独的公用动作管理区域）
+                if (customExercises.length > 0) {
+                    customExercises.forEach(ex => {
+                        html += `
+                            <div class="exercise-item flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-600 mb-2">
+                                <span class="text-white text-lg flex-grow mr-2">${ex}</span>
+                                <div class="flex gap-2">
+                                    <button onclick="editExercise('${muscle}', '${ex}')" 
+                                            class="exercise-edit-btn text-blue-400 hover:text-blue-300 p-2 transition-colors"
+                                            title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteExerciseFromManagement('${muscle}', '${ex}')" 
+                                            class="exercise-delete-btn text-red-400 hover:text-red-300 p-2 transition-colors"
+                                            title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
+                } else if (commonExercises.length > 0) {
+                    // 如果没有自定义动作但有公用动作，显示提示
+                    html += '<p class="text-gray-500 text-center py-4">该肌肉群暂无自定义动作，请添加。公用动作请在下方"公用动作管理"区域查看。</p>';
+                }
+                
                 exerciseListContainer.insertAdjacentHTML('beforeend', html);
             } catch (error) {
                 if (exerciseListLoader) exerciseListLoader.style.display = 'none';
