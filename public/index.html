@@ -982,10 +982,10 @@
                     
                     <div class="flex flex-wrap gap-3 mt-6">
                         <button onclick="addExerciseToSession()" class="btn btn-primary flex-1">
-                            <i class="fas fa-plus mr-2"></i> 添加新动作
+                            <i class="fas fa-plus mr-2"></i> 添加动作
                         </button>
                         <button id="save-session-button" onclick="saveSession()" class="btn btn-secondary flex-1">
-                            <i class="fas fa-save mr-2"></i> 完成并保存
+                            <i class="fas fa-save mr-2"></i> 完成训练
                         </button>
                     </div>
                 </div>
@@ -1031,9 +1031,9 @@
             </select>
             
             <div class="mt-6">
-                <h3 class="text-lg font-semibold mb-3 text-gray-300 text-center">添加新动作</h3>
+                <h3 class="text-lg font-semibold mb-3 text-gray-300 text-center">添加动作</h3>
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <input type="text" id="new-exercise-input" placeholder="新动作名称" 
+                    <input type="text" id="new-exercise-input" placeholder="动作名称" 
                            class="flex-1 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
                     <button onclick="addNewExercise()" class="btn btn-primary sm:w-auto w-full">
                         <i class="fas fa-plus mr-1"></i> 添加
@@ -1651,7 +1651,7 @@
                             // 填充动作选择器
                             const selectElement = exerciseDiv.querySelector('.exercise-select');
                             let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
-                            optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
+                            optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加动作 --</option>';
                             selectElement.innerHTML = optionsHtml;
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
 
