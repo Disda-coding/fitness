@@ -10,7 +10,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Theme transition overlay */
+        /* View Transitions API for theme switching */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+        
+        ::view-transition-old(root) {
+            z-index: 1;
+        }
+        
+        ::view-transition-new(root) {
+            z-index: 9999;
+        }
+        
+        .dark-to-light::view-transition-old(root) {
+            z-index: 9999;
+        }
+        
+        .dark-to-light::view-transition-new(root) {
+            z-index: 1;
+        }
+        
+        /* Circle reveal animation */
+        @keyframes circle-expand {
+            from {
+                clip-path: circle(0% at var(--circle-x) var(--circle-y));
+            }
+            to {
+                clip-path: circle(150% at var(--circle-x) var(--circle-y));
+            }
+        }
+        
+        .light-to-dark::view-transition-new(root) {
+            animation: circle-expand 0.5s ease-out forwards;
+        }
+        
+        .dark-to-light::view-transition-old(root) {
+            animation: circle-expand 0.5s ease-out forwards;
+        }
+        
+        /* Fallback for browsers without View Transitions */
         .theme-transition-overlay {
             position: fixed;
             top: 0;
@@ -19,7 +60,10 @@
             height: 100vh;
             z-index: 9999;
             pointer-events: none;
-            opacity: 0;
+        }
+        
+        .theme-transition-overlay.animating {
+            animation: fallback-circle-expand 0.5s ease-out forwards;
         }
         
         .theme-transition-overlay.light {
@@ -30,17 +74,14 @@
             background: #0a0f1d;
         }
         
-        .theme-transition-overlay.animating {
-            opacity: 1;
-            animation: theme-circle-expand 0.5s ease-out forwards;
-        }
-        
-        @keyframes theme-circle-expand {
+        @keyframes fallback-circle-expand {
             0% {
-                clip-path: circle(0px at var(--circle-x, 50%) var(--circle-y, 50%));
+                clip-path: circle(0% at var(--circle-x) var(--circle-y));
+                opacity: 1;
             }
             100% {
-                clip-path: circle(150vmax at var(--circle-x, 50%) var(--circle-y, 50%));
+                clip-path: circle(150% at var(--circle-x) var(--circle-y));
+                opacity: 1;
             }
         }
         
@@ -1261,7 +1302,35 @@
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
             
-            // Create overlay element
+            // Set CSS variables for circle position
+            document.documentElement.style.setProperty('--circle-x', x + 'px');
+            document.documentElement.style.setProperty('--circle-y', y + 'px');
+            
+            // Check if View Transitions API is supported
+            if (!document.startViewTransition) {
+                // Fallback for older browsers
+                fallbackThemeTransition(newTheme, x, y);
+                return;
+            }
+            
+            // Set transition class based on direction
+            const transitionClass = currentTheme === 'dark' ? 'light-to-dark' : 'dark-to-light';
+            document.documentElement.classList.add(transitionClass);
+            
+            // Use View Transitions API
+            const transition = document.startViewTransition(() => {
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+            
+            transition.finished.then(() => {
+                document.documentElement.classList.remove(transitionClass);
+            });
+        }
+        
+        // Fallback for browsers without View Transitions
+        function fallbackThemeTransition(newTheme, x, y) {
             let overlay = document.querySelector('.theme-transition-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -1269,26 +1338,23 @@
                 document.body.appendChild(overlay);
             }
             
-            // Set overlay color based on new theme
             overlay.className = 'theme-transition-overlay ' + newTheme;
             overlay.style.setProperty('--circle-x', x + 'px');
             overlay.style.setProperty('--circle-y', y + 'px');
             
-            // Start animation
-            requestAnimationFrame(() => {
-                overlay.classList.add('animating');
-            });
+            // Force reflow
+            overlay.offsetHeight;
             
-            // Change theme after animation
+            overlay.classList.add('animating');
+            
             setTimeout(() => {
                 document.documentElement.setAttribute('data-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
                 updateThemeIcon(newTheme);
                 
-                // Remove overlay after theme change
                 setTimeout(() => {
                     overlay.classList.remove('animating');
-                    overlay.style.opacity = '0';
+                    overlay.remove();
                 }, 50);
             }, 450);
         }
