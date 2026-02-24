@@ -33,7 +33,7 @@
             z-index: 1;
         }
         
-        /* Circle reveal animation */
+        /* Circle expand animation (for light theme) */
         @keyframes circle-expand {
             from {
                 clip-path: circle(0% at var(--circle-x) var(--circle-y));
@@ -43,10 +43,27 @@
             }
         }
         
-        .light-to-dark::view-transition-new(root) {
-            animation: circle-expand 0.5s ease-out forwards;
+        /* Circle collapse animation (for dark theme) */
+        @keyframes circle-collapse {
+            from {
+                clip-path: circle(150% at var(--circle-x) var(--circle-y));
+            }
+            to {
+                clip-path: circle(0% at var(--circle-x) var(--circle-y));
+            }
         }
         
+        /* Light to Dark: collapse animation on old (light) root */
+        .light-to-dark::view-transition-old(root) {
+            animation: circle-collapse 0.5s ease-in forwards;
+            z-index: 9999;
+        }
+        
+        .light-to-dark::view-transition-new(root) {
+            z-index: 1;
+        }
+        
+        /* Dark to Light: expand animation on old (dark) root */
         .dark-to-light::view-transition-old(root) {
             animation: circle-expand 0.5s ease-out forwards;
         }
@@ -62,8 +79,12 @@
             pointer-events: none;
         }
         
-        .theme-transition-overlay.animating {
+        .theme-transition-overlay.animating-expand {
             animation: fallback-circle-expand 0.5s ease-out forwards;
+        }
+        
+        .theme-transition-overlay.animating-collapse {
+            animation: fallback-circle-collapse 0.5s ease-in forwards;
         }
         
         .theme-transition-overlay.light {
@@ -81,6 +102,17 @@
             }
             100% {
                 clip-path: circle(150% at var(--circle-x) var(--circle-y));
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fallback-circle-collapse {
+            0% {
+                clip-path: circle(150% at var(--circle-x) var(--circle-y));
+                opacity: 1;
+            }
+            100% {
+                clip-path: circle(0% at var(--circle-x) var(--circle-y));
                 opacity: 1;
             }
         }
@@ -1331,6 +1363,9 @@
         
         // Fallback for browsers without View Transitions
         function fallbackThemeTransition(newTheme, x, y) {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const isExpanding = newTheme === 'light';
+            
             let overlay = document.querySelector('.theme-transition-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -1338,14 +1373,17 @@
                 document.body.appendChild(overlay);
             }
             
-            overlay.className = 'theme-transition-overlay ' + newTheme;
+            // For collapse (light to dark), show the light theme overlay collapsing
+            // For expand (dark to light), show the light theme overlay expanding
+            overlay.className = 'theme-transition-overlay light';
             overlay.style.setProperty('--circle-x', x + 'px');
             overlay.style.setProperty('--circle-y', y + 'px');
             
             // Force reflow
             overlay.offsetHeight;
             
-            overlay.classList.add('animating');
+            const animClass = isExpanding ? 'animating-expand' : 'animating-collapse';
+            overlay.classList.add(animClass);
             
             setTimeout(() => {
                 document.documentElement.setAttribute('data-theme', newTheme);
@@ -1353,7 +1391,7 @@
                 updateThemeIcon(newTheme);
                 
                 setTimeout(() => {
-                    overlay.classList.remove('animating');
+                    overlay.classList.remove(animClass);
                     overlay.remove();
                 }, 50);
             }, 450);
