@@ -1112,6 +1112,29 @@
         [data-theme="light"] .workout-label {
             color: rgba(60, 60, 67, 0.8) !important;
         }
+        
+        /* Exercise select optgroup styling */
+        .exercise-select optgroup {
+            font-weight: bold;
+            color: #3a86ff;
+            background: rgba(58, 134, 255, 0.1);
+        }
+        
+        .exercise-select option {
+            font-weight: normal;
+            color: #e2e8f0;
+            background: #1e293b;
+        }
+        
+        [data-theme="light"] .exercise-select optgroup {
+            color: #007aff;
+            background: rgba(0, 122, 255, 0.1);
+        }
+        
+        [data-theme="light"] .exercise-select option {
+            color: #1c1c1e;
+            background: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -1351,6 +1374,8 @@
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
+        let customExercises = []; // 自定义动作列表
+        let commonExercises = []; // 公用动作列表
 
         // --- Theme Management ---
         function getSystemTheme() {
@@ -1706,7 +1731,6 @@
         }
 
         // --- 公用动作管理 ---
-        let commonExercises = [];
 
         async function loadCommonExercises() {
             const container = document.getElementById('common-exercises-container');
@@ -1926,7 +1950,26 @@
 
                             // 填充动作选择器
                             const selectElement = exerciseDiv.querySelector('.exercise-select');
-                            let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+                            let optionsHtml = '';
+                            
+                            // 自定义动作组
+                            if (customExercises.length > 0) {
+                                optionsHtml += '<optgroup label="自定义动作">';
+                                customExercises.forEach(ex => {
+                                    optionsHtml += `<option value="${ex}">${ex}</option>`;
+                                });
+                                optionsHtml += '</optgroup>';
+                            }
+                            
+                            // 公用动作组
+                            if (commonExercises.length > 0) {
+                                optionsHtml += '<optgroup label="公用动作">';
+                                commonExercises.forEach(ex => {
+                                    optionsHtml += `<option value="${ex}">${ex}</option>`;
+                                });
+                                optionsHtml += '</optgroup>';
+                            }
+                            
                             optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加动作 --</option>';
                             selectElement.innerHTML = optionsHtml;
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
@@ -1962,7 +2005,9 @@
                 const response = await fetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
                 if (!response.ok) throw new Error('加载动作列表失败');
                 const data = await response.json();
-                // 后端返回 { custom: [...], common: [...], all: [...] }
+                // 后端返回 { custom: [...], common: [...], all: [...], frequency: {...} }
+                customExercises = data.custom || [];
+                commonExercises = data.common || [];
                 availableExercises = data.all || [];
             } catch (error) {
                 console.error(error);
@@ -1974,7 +2019,26 @@
             const selects = document.querySelectorAll('.exercise-select');
             selects.forEach(select => {
                 const currentValue = select.value; // 保存当前选中的值
-                let optionsHtml = availableExercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+                let optionsHtml = '';
+                
+                // 自定义动作组
+                if (customExercises.length > 0) {
+                    optionsHtml += '<optgroup label="自定义动作">';
+                    customExercises.forEach(ex => {
+                        optionsHtml += `<option value="${ex}">${ex}</option>`;
+                    });
+                    optionsHtml += '</optgroup>';
+                }
+                
+                // 公用动作组
+                if (commonExercises.length > 0) {
+                    optionsHtml += '<optgroup label="公用动作">';
+                    commonExercises.forEach(ex => {
+                        optionsHtml += `<option value="${ex}">${ex}</option>`;
+                    });
+                    optionsHtml += '</optgroup>';
+                }
+                
                 optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
                 select.innerHTML = optionsHtml;
                 if (currentValue && availableExercises.includes(currentValue)) {

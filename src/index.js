@@ -19,7 +19,7 @@ app.use('*', cors({
 
 // --- API Endpoints for Custom Exercises ---
 
-// 1. Get all exercises for a specific muscle group (custom + common)
+// 1. Get all exercises for a specific muscle group (custom + common) with frequency
 app.get('/exercises/:muscle', async (c) => {
   const muscle = c.req.param('muscle');
   if (!muscle) {
@@ -36,11 +36,46 @@ app.get('/exercises/:muscle', async (c) => {
       "SELECT exercise_name FROM common_exercises ORDER BY exercise_name"
     ).all();
     
+    // Get exercise frequency from workout history for this muscle group
+    const { results: sessionResults } = await c.env.DB.prepare(
+      "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ?"
+    ).bind(muscle).all();
+    
+    // Count exercise frequency
+    const frequency = {};
+    sessionResults.forEach(session => {
+      try {
+        const exercises = JSON.parse(session.exercises_data);
+        exercises.forEach(ex => {
+          const name = ex.exercise_name;
+          frequency[name] = (frequency[name] || 0) + 1;
+        });
+      } catch (e) {
+        // Skip invalid data
+      }
+    });
+    
     const custom = customResults.map(r => r.exercise_name);
     const common = commonResults.map(r => r.exercise_name);
-    const all = [...custom, ...common];
     
-    return c.json({ custom, common, all });
+    // Sort by frequency (descending), then alphabetically
+    const sortByFrequency = (a, b) => {
+      const freqA = frequency[a] || 0;
+      const freqB = frequency[b] || 0;
+      if (freqA !== freqB) return freqB - freqA;
+      return a.localeCompare(b);
+    };
+    
+    const customSorted = [...custom].sort(sortByFrequency);
+    const commonSorted = [...common].sort(sortByFrequency);
+    const allSorted = [...customSorted, ...commonSorted];
+    
+    return c.json({ 
+      custom: customSorted, 
+      common: commonSorted, 
+      all: allSorted,
+      frequency 
+    });
   } catch (e) {
     console.error(e);
     return c.json({ error: e.message }, 500);
