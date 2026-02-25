@@ -1137,6 +1137,90 @@
             color: #1c1c1e;
             background: #ffffff;
         }
+        
+        /* Last workout tooltip */
+        .last-workout-tooltip {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 134, 255, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            z-index: 1000;
+            max-width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: tooltipFadeIn 0.3s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+            to { opacity: 1; transform: translateY(-50%) translateX(0); }
+        }
+        
+        @keyframes tooltipFadeOut {
+            from { opacity: 1; transform: translateY(-50%) translateX(0); }
+            to { opacity: 0; transform: translateY(-50%) translateX(20px); }
+        }
+        
+        .last-workout-tooltip.fading {
+            animation: tooltipFadeOut 0.3s ease-in forwards;
+        }
+        
+        .last-workout-tooltip .tooltip-header {
+            font-size: 0.85rem;
+            color: #3a86ff;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .last-workout-tooltip .tooltip-date {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        
+        .last-workout-tooltip .tooltip-set {
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(74, 85, 104, 0.3);
+        }
+        
+        .last-workout-tooltip .tooltip-set:last-child {
+            border-bottom: none;
+        }
+        
+        .last-workout-tooltip .tooltip-set span {
+            color: #94a3b8;
+        }
+        
+        [data-theme="light"] .last-workout-tooltip {
+            background: rgba(255, 255, 255, 0.95);
+            border: 0.5px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        [data-theme="light"] .last-workout-tooltip .tooltip-header {
+            color: #007aff;
+        }
+        
+        [data-theme="light"] .last-workout-tooltip .tooltip-date {
+            color: rgba(60, 60, 67, 0.6);
+        }
+        
+        [data-theme="light"] .last-workout-tooltip .tooltip-set {
+            color: #1c1c1e;
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+        
+        [data-theme="light"] .last-workout-tooltip .tooltip-set span {
+            color: rgba(60, 60, 67, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -2085,6 +2169,122 @@
                 }
             }
             saveSessionToLocalStorage(); // 动作选择改变时保存到LocalStorage
+            
+            // 获取上次训练数据并显示
+            if (selectElement.value && selectElement.value !== 'add_new') {
+                fetchAndShowLastWorkout(selectElement);
+            } else {
+                hideLastWorkoutTooltip();
+            }
+        }
+        
+        // --- 上次训练数据提示窗 ---
+        let tooltipTimeout = null;
+        let lastWorkoutData = null;
+        
+        function fetchAndShowLastWorkout(selectElement) {
+            const exerciseName = selectElement.value;
+            const exerciseBlock = selectElement.closest('.exercise-block');
+            
+            fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.sets_data && data.sets_data.length > 0) {
+                        lastWorkoutData = data;
+                        showLastWorkoutTooltip(exerciseName, data);
+                        autoFillFirstSetWeight(exerciseBlock, data.sets_data);
+                    } else {
+                        hideLastWorkoutTooltip();
+                        lastWorkoutData = null;
+                    }
+                })
+                .catch(err => {
+                    console.error('获取上次训练数据失败:', err);
+                    hideLastWorkoutTooltip();
+                });
+        }
+        
+        function showLastWorkoutTooltip(exerciseName, data) {
+            hideLastWorkoutTooltip(true);
+            
+            const tooltip = document.createElement('div');
+            tooltip.className = 'last-workout-tooltip';
+            tooltip.id = 'last-workout-tooltip';
+            
+            let setsHtml = data.sets_data.map((set, i) => 
+                `<div class="tooltip-set">第${i + 1}组: <span>${set.weight}kg</span> × <span>${set.reps}次</span></div>`
+            ).join('');
+            
+            tooltip.innerHTML = `
+                <div class="tooltip-header">📚 上次训练参考</div>
+                <div class="tooltip-date">${data.session_date || '未知日期'}</div>
+                ${setsHtml}
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            // 2秒后自动消失
+            tooltipTimeout = setTimeout(() => {
+                hideLastWorkoutTooltip();
+            }, 2000);
+        }
+        
+        function hideLastWorkoutTooltip(immediate = false) {
+            if (tooltipTimeout) {
+                clearTimeout(tooltipTimeout);
+                tooltipTimeout = null;
+            }
+            
+            const tooltip = document.getElementById('last-workout-tooltip');
+            if (tooltip) {
+                if (immediate) {
+                    tooltip.remove();
+                } else {
+                    tooltip.classList.add('fading');
+                    setTimeout(() => tooltip.remove(), 300);
+                }
+            }
+        }
+        
+        function autoFillFirstSetWeight(exerciseBlock, setsData) {
+            if (!setsData || setsData.length === 0) return;
+            
+            const firstWeightInput = exerciseBlock.querySelector('.set-item:first-child .set-weight');
+            if (firstWeightInput && !firstWeightInput.value) {
+                firstWeightInput.value = setsData[0].weight;
+                firstWeightInput.dataset.lastWeight = setsData[0].weight;
+                
+                // 添加焦点事件：用户点击重量输入框时清空
+                firstWeightInput.addEventListener('focus', function onFirstFocus() {
+                    if (this.dataset.lastWeight) {
+                        this.value = '';
+                        delete this.dataset.lastWeight;
+                    }
+                    this.removeEventListener('focus', onFirstFocus);
+                }, { once: true });
+            }
+            
+            // 为所有次数输入框添加逻辑：如果用户直接输入次数，使用上次重量
+            const setsContainer = exerciseBlock.querySelector('.sets-container');
+            setsData.forEach((setData, index) => {
+                const setItems = setsContainer.querySelectorAll('.set-item');
+                if (setItems[index]) {
+                    const repsInput = setItems[index].querySelector('.set-reps');
+                    const weightInput = setItems[index].querySelector('.set-weight');
+                    
+                    if (repsInput && weightInput && setData.weight) {
+                        repsInput.dataset.suggestedWeight = setData.weight;
+                        repsInput.dataset.suggestedReps = setData.reps;
+                        
+                        // 用户输入次数时，如果重量为空，自动填入上次重量
+                        repsInput.addEventListener('input', function onRepsInput() {
+                            if (!weightInput.value && this.dataset.suggestedWeight) {
+                                weightInput.value = this.dataset.suggestedWeight;
+                            }
+                        }, { once: true });
+                    }
+                }
+            });
         }
         
         // --- 当前训练会话管理 ---

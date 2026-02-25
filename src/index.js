@@ -243,7 +243,43 @@ app.delete('/common-exercises', async (c) => {
 
 // --- API Endpoints for Workout Sessions ---
 
-// 9. Get workout history (all sessions) for a muscle group
+// 9. Get last workout data for a specific exercise in a muscle group
+app.get('/last-workout/:muscle/:exercise', async (c) => {
+  const muscle = c.req.param('muscle');
+  const exercise = c.req.param('exercise');
+  if (!muscle || !exercise) {
+    return c.json({ error: 'Muscle group and exercise are required' }, 400);
+  }
+  try {
+    // Get the most recent session containing this exercise
+    const { results } = await c.env.DB.prepare(
+      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? ORDER BY session_date DESC, session_id DESC LIMIT 5"
+    ).bind(muscle).all();
+    
+    // Find the exercise in the sessions
+    for (const session of results) {
+      try {
+        const exercises = JSON.parse(session.exercises_data);
+        const found = exercises.find(ex => ex.exercise_name === exercise);
+        if (found && found.sets_data && found.sets_data.length > 0) {
+          return c.json({ 
+            sets_data: found.sets_data, 
+            session_date: session.session_date 
+          });
+        }
+      } catch (e) {
+        // Skip invalid data
+      }
+    }
+    
+    return c.json({ sets_data: null, session_date: null });
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// 10. Get workout history (all sessions) for a muscle group
 app.get('/history/:muscle', async (c) => {
   const muscle = c.req.param('muscle');
   if (!muscle) {
