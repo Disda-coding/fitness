@@ -45,23 +45,23 @@
             }
         }
         
-        /* Dark to Light: white theme expands from button */
-        .dark-to-light::view-transition-new(root) {
-            animation: circle-expand 0.5s ease-out forwards;
-            z-index: 9999;
-        }
-        
+        /* Dark to Light: dark theme collapses to button (revealing white) */
         .dark-to-light::view-transition-old(root) {
-            z-index: 1;
-        }
-        
-        /* Light to Dark: white theme collapses to button */
-        .light-to-dark::view-transition-old(root) {
             animation: circle-collapse 0.5s ease-in forwards;
             z-index: 9999;
         }
         
+        .dark-to-light::view-transition-new(root) {
+            z-index: 1;
+        }
+        
+        /* Light to Dark: dark theme expands from button */
         .light-to-dark::view-transition-new(root) {
+            animation: circle-expand 0.5s ease-out forwards;
+            z-index: 9999;
+        }
+        
+        .light-to-dark::view-transition-old(root) {
             z-index: 1;
         }
         
@@ -74,7 +74,7 @@
             height: 100vh;
             z-index: 9999;
             pointer-events: none;
-            background: #f5f5f7;
+            background: #111827;
         }
         
         .theme-transition-overlay.animating-expand {
@@ -1414,9 +1414,9 @@
         }
         
         // Fallback for browsers without View Transitions
-        // White overlay expands for light theme, collapses for dark theme
+        // Dark overlay expands for dark theme, collapses for light theme
         function fallbackThemeTransition(newTheme, x, y) {
-            const isExpanding = newTheme === 'light';
+            const isExpanding = newTheme === 'dark';
             
             let overlay = document.querySelector('.theme-transition-overlay');
             if (!overlay) {
