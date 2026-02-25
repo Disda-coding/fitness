@@ -55,13 +55,13 @@
             z-index: 1;
         }
         
-        /* Light to Dark: white theme collapses to button */
-        .light-to-dark::view-transition-old(root) {
-            animation: circle-collapse 0.5s ease-in forwards;
+        /* Light to Dark: dark theme expands from button (covers white) */
+        .light-to-dark::view-transition-new(root) {
+            animation: circle-expand 0.5s ease-out forwards;
             z-index: 9999;
         }
         
-        .light-to-dark::view-transition-new(root) {
+        .light-to-dark::view-transition-old(root) {
             z-index: 1;
         }
         
@@ -1414,10 +1414,8 @@
         }
         
         // Fallback for browsers without View Transitions
-        // White overlay expands for light theme, collapses for dark theme
+        // Overlay expands from button for both directions
         function fallbackThemeTransition(newTheme, x, y) {
-            const isExpanding = newTheme === 'light';
-            
             let overlay = document.querySelector('.theme-transition-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -1425,21 +1423,19 @@
                 document.body.appendChild(overlay);
             }
             
+            // Set overlay background color based on target theme
+            overlay.style.background = newTheme === 'light' ? '#f5f5f7' : '#111827';
+            
             overlay.style.setProperty('--circle-x', x + 'px');
             overlay.style.setProperty('--circle-y', y + 'px');
             
-            // For collapse animation, start with full circle
-            if (!isExpanding) {
-                overlay.style.clipPath = 'circle(150% at ' + x + 'px ' + y + 'px)';
-            } else {
-                overlay.style.clipPath = 'circle(0% at ' + x + 'px ' + y + 'px)';
-            }
+            // Start from button center
+            overlay.style.clipPath = 'circle(0% at ' + x + 'px ' + y + 'px)';
             
             // Force reflow
             overlay.offsetHeight;
             
-            const animClass = isExpanding ? 'animating-expand' : 'animating-collapse';
-            overlay.classList.add(animClass);
+            overlay.classList.add('animating-expand');
             
             setTimeout(() => {
                 document.documentElement.setAttribute('data-theme', newTheme);
@@ -1447,7 +1443,7 @@
                 updateThemeIcon(newTheme);
                 
                 setTimeout(() => {
-                    overlay.classList.remove(animClass);
+                    overlay.classList.remove('animating-expand');
                     overlay.remove();
                 }, 50);
             }, 450);
