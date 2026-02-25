@@ -1040,6 +1040,63 @@
         #exercise-management-page h3 {
             text-align: center;
         }
+        
+        /* Light mode Workout Planner */
+        [data-theme="light"] #target-weight {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border: 0.5px solid rgba(0, 0, 0, 0.15) !important;
+            color: #1c1c1e !important;
+        }
+        
+        [data-theme="light"] #target-weight:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15) !important;
+        }
+        
+        [data-theme="light"] #target-weight::placeholder {
+            color: rgba(60, 60, 67, 0.5) !important;
+        }
+        
+        [data-theme="light"] .workout-info-box {
+            background: rgba(255, 255, 255, 0.72) !important;
+            border: 0.5px solid rgba(0, 0, 0, 0.08) !important;
+        }
+        
+        [data-theme="light"] .workout-info-box h3 {
+            color: #007aff !important;
+        }
+        
+        [data-theme="light"] .workout-info-box p {
+            color: rgba(60, 60, 67, 0.8) !important;
+        }
+        
+        [data-theme="light"] .workout-plan-item {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border: 0.5px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        [data-theme="light"] .workout-plan-item.target-week {
+            background: rgba(0, 122, 255, 0.08) !important;
+            border-color: rgba(0, 122, 255, 0.3) !important;
+        }
+        
+        [data-theme="light"] .workout-plan-item.deload-week {
+            border-color: rgba(255, 149, 0, 0.3) !important;
+        }
+        
+        [data-theme="light"] .workout-stats-box {
+            background: rgba(0, 122, 255, 0.08) !important;
+            border: 0.5px solid rgba(0, 122, 255, 0.2) !important;
+        }
+        
+        [data-theme="light"] .workout-stats-box .stats-title {
+            color: #007aff !important;
+        }
+        
+        [data-theme="light"] .workout-label {
+            color: rgba(60, 60, 67, 0.8) !important;
+        }
     </style>
 </head>
 <body>
@@ -1231,13 +1288,13 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-gray-300 mb-2">目标重量 (kg)</label>
+                            <label class="workout-label block text-gray-300 mb-2">目标重量 (kg)</label>
                             <input type="number" id="target-weight" placeholder="例如: 100" 
                                    class="w-full bg-gray-800 border border-gray-600 rounded-xl p-3 text-white text-lg"
                                    oninput="calculateWorkoutPlan()">
                         </div>
                         
-                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-600">
+                        <div class="workout-info-box bg-gray-800/50 p-4 rounded-lg border border-gray-600">
                             <h3 class="text-blue-300 font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>计算说明</h3>
                             <p class="text-gray-400 text-sm">
                                 根据你的目标重量，系统会生成渐进式训练计划，从70%开始逐步提升到目标重量。
@@ -1585,8 +1642,10 @@
                 const deloadBadge = stage.deload ? '<span class="ml-2 px-2 py-1 bg-yellow-600 text-yellow-100 text-xs rounded">减载</span>' : '';
                 const targetBadge = isTargetWeek ? '<span class="ml-2 px-2 py-1 bg-green-600 text-green-100 text-xs rounded">目标</span>' : '';
                 
+                const itemClass = `workout-plan-item bg-gray-800 p-4 rounded-lg border ${isTargetWeek ? 'target-week border-green-500 bg-green-900/20' : 'border-gray-600'} ${stage.deload ? 'deload-week border-yellow-600/50' : ''}`;
+                
                 html += `
-                    <div class="bg-gray-800 p-4 rounded-lg border ${isTargetWeek ? 'border-green-500 bg-green-900/20' : 'border-gray-600'} ${stage.deload ? 'border-yellow-600/50' : ''}">
+                    <div class="${itemClass}">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-gray-400 text-sm">第 ${stage.week} 周</span>
                             <div>${deloadBadge}${targetBadge}</div>
@@ -1607,9 +1666,9 @@
             const totalReps = plan.reduce((sum, s) => sum + s.sets * s.reps, 0);
             
             html += `
-                <div class="mt-4 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
+                <div class="workout-stats-box mt-4 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
                     <div class="flex justify-between items-center">
-                        <span class="text-blue-300"><i class="fas fa-chart-bar mr-2"></i>计划统计</span>
+                        <span class="stats-title text-blue-300"><i class="fas fa-chart-bar mr-2"></i>计划统计</span>
                     </div>
                     <div class="grid grid-cols-3 gap-4 mt-3 text-center">
                         <div>
