@@ -2249,30 +2249,37 @@
         function autoFillFirstSetWeight(exerciseBlock, setsData) {
             if (!setsData || setsData.length === 0) return;
             
-            const firstWeightInput = exerciseBlock.querySelector('.set-item:first-child .set-weight');
-            if (firstWeightInput && !firstWeightInput.value) {
-                firstWeightInput.value = setsData[0].weight;
-                firstWeightInput.dataset.lastWeight = setsData[0].weight;
-                
-                // 添加焦点事件：用户点击重量输入框时清空
-                firstWeightInput.addEventListener('focus', function onFirstFocus() {
-                    if (this.dataset.lastWeight) {
-                        this.value = '';
-                        delete this.dataset.lastWeight;
-                    }
-                    this.removeEventListener('focus', onFirstFocus);
-                }, { once: true });
-            }
-            
-            // 为所有次数输入框添加逻辑：如果用户直接输入次数，使用上次重量
             const setsContainer = exerciseBlock.querySelector('.sets-container');
+            const setItems = setsContainer.querySelectorAll('.set-item');
+            
+            // 更新所有已存在组的重量和次数参考数据
             setsData.forEach((setData, index) => {
-                const setItems = setsContainer.querySelectorAll('.set-item');
                 if (setItems[index]) {
-                    const repsInput = setItems[index].querySelector('.set-reps');
                     const weightInput = setItems[index].querySelector('.set-weight');
+                    const repsInput = setItems[index].querySelector('.set-reps');
                     
-                    if (repsInput && weightInput && setData.weight) {
+                    if (weightInput) {
+                        // 存储上次数据作为参考
+                        weightInput.dataset.suggestedWeight = setData.weight;
+                        weightInput.dataset.suggestedReps = setData.reps;
+                        
+                        // 如果是第一组，自动填入上次重量
+                        if (index === 0) {
+                            weightInput.value = setData.weight || '';
+                            weightInput.dataset.lastWeight = setData.weight;
+                            
+                            // 添加焦点事件：用户点击重量输入框时清空
+                            weightInput.addEventListener('focus', function onFirstFocus() {
+                                if (this.dataset.lastWeight) {
+                                    this.value = '';
+                                    delete this.dataset.lastWeight;
+                                }
+                                this.removeEventListener('focus', onFirstFocus);
+                            }, { once: true });
+                        }
+                    }
+                    
+                    if (repsInput) {
                         repsInput.dataset.suggestedWeight = setData.weight;
                         repsInput.dataset.suggestedReps = setData.reps;
                         
