@@ -2360,10 +2360,8 @@
                 </div>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
-            // 自动为新动作添加5组
-            for (let i = 0; i < 5; i++) {
-                addSetToExercise(exerciseId);
-            }
+            // 自动为新动作添加1组
+            addSetToExercise(exerciseId);
             updateAllExerciseDropdowns(); // 更新新添加的下拉菜单
             saveSessionToLocalStorage(); // 添加新动作块后保存
         }
