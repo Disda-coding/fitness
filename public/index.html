@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -280,6 +280,10 @@
         
         [data-theme="light"] .btn-primary:hover {
             box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+        }
+        
+        [data-theme="light"] #input-modal-cancel {
+            color: white;
         }
         
         [data-theme="light"] .btn-secondary {
@@ -1518,7 +1522,7 @@
 
     <!-- JavaScript部分保持不变 -->
     <script>
-        const API_BASE_URL = ''; // 后端API的基础URL
+        const API_BASE_URL = ''; // 后端API的基础URL（部署时自动填充）
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
