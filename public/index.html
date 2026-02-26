@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -2124,7 +2124,7 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onfocus="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
@@ -2410,7 +2410,7 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onfocus="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
