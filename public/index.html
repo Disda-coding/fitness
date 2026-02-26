@@ -1,5 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
-<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -2297,35 +2296,37 @@
         // --- 上次训练数据提示窗 ---
         let tooltipTimeout = null;
         let lastWorkoutData = null;
-        let lastShownExercise = ''; // 记录上次显示浮窗的动作名
+        let fetchTooltipTimer = null; // 防抖定时器
         
         function fetchAndShowLastWorkout(selectElement) {
             const exerciseName = selectElement.value;
             
-            // 如果是同一个动作，不重复显示
-            if (exerciseName === lastShownExercise) {
-                return;
+            // 防抖：清除之前的定时器
+            if (fetchTooltipTimer) {
+                clearTimeout(fetchTooltipTimer);
             }
-            lastShownExercise = exerciseName;
             
-            const exerciseBlock = selectElement.closest('.exercise-block');
-            
-            fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.sets_data && data.sets_data.length > 0) {
-                        lastWorkoutData = data;
-                        showLastWorkoutTooltip(exerciseName, data);
-                        autoFillFirstSetWeight(exerciseBlock, data.sets_data);
-                    } else {
+            // 延迟执行，避免 onclick 和 onchange 重复触发
+            fetchTooltipTimer = setTimeout(() => {
+                const exerciseBlock = selectElement.closest('.exercise-block');
+                
+                fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.sets_data && data.sets_data.length > 0) {
+                            lastWorkoutData = data;
+                            showLastWorkoutTooltip(exerciseName, data);
+                            autoFillFirstSetWeight(exerciseBlock, data.sets_data);
+                        } else {
+                            hideLastWorkoutTooltip();
+                            lastWorkoutData = null;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取上次训练数据失败:', err);
                         hideLastWorkoutTooltip();
-                        lastWorkoutData = null;
-                    }
-                })
-                .catch(err => {
-                    console.error('获取上次训练数据失败:', err);
-                    hideLastWorkoutTooltip();
-                });
+                    });
+            }, 100);
         }
         
         function showLastWorkoutTooltip(exerciseName, data) {
