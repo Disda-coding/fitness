@@ -2396,16 +2396,12 @@
         // 添加多组
         function addMultipleSetsToExercise(exerciseId, count) {
             const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
-            const setItems = setsContainer.querySelectorAll('.set-item');
 
-            // 获取最后一组的重量作为默认值
-            let defaultWeight = '';
-            if (setItems.length > 0) {
-                const lastSetWeightInput = setItems[setItems.length - 1].querySelector('.set-weight');
-                if (lastSetWeightInput) {
-                    defaultWeight = lastSetWeightInput.value;
-                }
-            }
+            // 弹出输入框让用户输入重量
+            const weight = prompt(`请输入${count}组的重量 (kg):`, '');
+            if (weight === null) return; // 用户取消
+
+            const defaultWeight = weight.trim();
 
             // 添加count组
             for (let i = 0; i < count; i++) {
