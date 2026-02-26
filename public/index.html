@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -2293,9 +2293,17 @@
         // --- 上次训练数据提示窗 ---
         let tooltipTimeout = null;
         let lastWorkoutData = null;
+        let lastShownExercise = ''; // 记录上次显示浮窗的动作名
         
         function fetchAndShowLastWorkout(selectElement) {
             const exerciseName = selectElement.value;
+            
+            // 如果是同一个动作，不重复显示
+            if (exerciseName === lastShownExercise) {
+                return;
+            }
+            lastShownExercise = exerciseName;
+            
             const exerciseBlock = selectElement.closest('.exercise-block');
             
             fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
