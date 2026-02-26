@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -2124,7 +2124,7 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onfocus="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
@@ -2160,6 +2160,11 @@
                             optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加动作 --</option>';
                             selectElement.innerHTML = optionsHtml;
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
+                            
+                            // 显示上次训练浮窗
+                            if (exercise.exercise_name) {
+                                fetchAndShowLastWorkout(selectElement);
+                            }
 
                             // 填充组数数据
                             const setsContainer = exerciseDiv.querySelector('.sets-container');
@@ -2232,6 +2237,8 @@
                     select.value = currentValue; // 恢复之前选中的值
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
+                    // 显示上次训练浮窗
+                    fetchAndShowLastWorkout(select);
                 } else {
                     select.value = ''; // 如果没有可用动作，则设置为空
                 }
@@ -2403,7 +2410,7 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onfocus="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
