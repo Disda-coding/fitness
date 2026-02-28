@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -2312,9 +2312,15 @@
         let tooltipTimeout = null;
         let lastWorkoutData = null;
         let fetchTooltipTimer = null; // 防抖定时器
+        let suppressTooltip = false; // 用于控制是否显示浮窗的标志
         
         function fetchAndShowLastWorkout(selectElement) {
             const exerciseName = selectElement.value;
+            
+            // 如果设置了抑制标志，不显示浮窗
+            if (suppressTooltip) {
+                return;
+            }
             
             // 防抖：清除之前的定时器
             if (fetchTooltipTimer) {
@@ -2635,7 +2641,9 @@
                 
                 showModal('成功', '训练已保存！');
                 document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
+                suppressTooltip = true; // 抑制浮窗显示
                 addExerciseToSession(); // 添加一个默认的空动作块
+                suppressTooltip = false; // 恢复浮窗显示
                 localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
                 await loadHistory(); // 重新加载历史记录
             } catch (error) {
