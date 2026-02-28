@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* CSS Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+        }
+        
         /* View Transitions API for theme switching */
         ::view-transition-old(root),
         ::view-transition-new(root) {
@@ -279,6 +293,14 @@
         
         [data-theme="light"] .btn-primary:hover {
             box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+        }
+        
+        [data-theme="light"] #input-modal-cancel {
+            color: white !important;
+        }
+        
+        [data-theme="light"] #input-modal-cancel:hover {
+            color: white !important;
         }
         
         [data-theme="light"] .btn-secondary {
@@ -562,7 +584,7 @@
         .app-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 1rem;
+            padding: 0 1rem 1rem 1rem;
         }
         
         .page { 
@@ -580,7 +602,7 @@
         /* 头部样式 */
         .app-header {
             text-align: center;
-            padding: 1.5rem 1rem;
+            padding: 1rem;
             position: sticky;
             top: 0;
             z-index: 50;
@@ -589,6 +611,7 @@
             margin-right: -1rem;
             padding-left: 1rem;
             padding-right: 1rem;
+            padding-top: 1.5rem;
         }
         
         [data-theme="dark"] .app-header {
@@ -610,8 +633,7 @@
             top: 0;
             z-index: 50;
             padding: 1rem;
-            margin: -1rem;
-            margin-bottom: 1.5rem;
+            margin: -2rem -1rem 1.5rem -1rem;
             display: grid;
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
@@ -976,6 +998,10 @@
             justify-content: center;
             z-index: 1000;
             animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-backdrop.hidden {
+            display: none;
         }
         
         .modal-content {
@@ -1499,9 +1525,21 @@
         </div>
     </div>
 
+    <!-- 输入模态框 -->
+    <div id="input-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="input-modal-title" class="text-xl font-bold mb-3 text-white"></h3>
+            <input type="number" id="input-modal-field" inputmode="decimal" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
+            <div class="flex gap-3">
+                <button id="input-modal-cancel" class="btn flex-1 bg-gray-600 hover:bg-gray-500 rounded-lg py-2 text-white">取消</button>
+                <button id="input-modal-confirm" class="btn flex-1 btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript部分保持不变 -->
     <script>
-        const API_BASE_URL = ''; // 后端API的基础URL
+        const API_BASE_URL = ''; // 后端API的基础URL（部署时自动填充）
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -1690,6 +1728,42 @@
             defaultOkButton.onclick = defaultModalClose;
             modalActions.appendChild(defaultOkButton);
         }
+
+        // --- 输入模态框逻辑 ---
+        const inputModal = document.getElementById('input-modal');
+        const inputModalField = document.getElementById('input-modal-field');
+        let inputModalCallback = null;
+
+        function showInputModal(title, defaultValue, onConfirmCallback) {
+            document.getElementById('input-modal-title').textContent = title;
+            inputModalField.value = defaultValue || '';
+            inputModalField.dataset.prevValue = defaultValue || '';
+            inputModalCallback = onConfirmCallback;
+            inputModal.classList.remove('hidden');
+            setTimeout(() => inputModalField.focus(), 100);
+        }
+
+        function closeInputModal() {
+            inputModal.classList.add('hidden');
+            inputModalCallback = null;
+        }
+
+        document.getElementById('input-modal-cancel').onclick = closeInputModal;
+        
+        document.getElementById('input-modal-confirm').onclick = function() {
+            if (inputModalCallback) {
+                inputModalCallback(inputModalField.value.trim());
+            }
+            closeInputModal();
+        };
+
+        inputModalField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('input-modal-confirm').click();
+            } else if (e.key === 'Escape') {
+                closeInputModal();
+            }
+        });
 
 
         // --- 页面导航逻辑 ---
@@ -2071,7 +2145,7 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
@@ -2107,6 +2181,11 @@
                             optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加动作 --</option>';
                             selectElement.innerHTML = optionsHtml;
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
+                            
+                            // 显示上次训练浮窗
+                            if (exercise.exercise_name) {
+                                fetchAndShowLastWorkout(selectElement);
+                            }
 
                             // 填充组数数据
                             const setsContainer = exerciseDiv.querySelector('.sets-container');
@@ -2179,6 +2258,8 @@
                     select.value = currentValue; // 恢复之前选中的值
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
+                    // 显示上次训练浮窗
+                    fetchAndShowLastWorkout(select);
                 } else {
                     select.value = ''; // 如果没有可用动作，则设置为空
                 }
@@ -2229,27 +2310,37 @@
         // --- 上次训练数据提示窗 ---
         let tooltipTimeout = null;
         let lastWorkoutData = null;
+        let fetchTooltipTimer = null; // 防抖定时器
         
         function fetchAndShowLastWorkout(selectElement) {
             const exerciseName = selectElement.value;
-            const exerciseBlock = selectElement.closest('.exercise-block');
             
-            fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.sets_data && data.sets_data.length > 0) {
-                        lastWorkoutData = data;
-                        showLastWorkoutTooltip(exerciseName, data);
-                        autoFillFirstSetWeight(exerciseBlock, data.sets_data);
-                    } else {
+            // 防抖：清除之前的定时器
+            if (fetchTooltipTimer) {
+                clearTimeout(fetchTooltipTimer);
+            }
+            
+            // 延迟执行，避免 onclick 和 onchange 重复触发
+            fetchTooltipTimer = setTimeout(() => {
+                const exerciseBlock = selectElement.closest('.exercise-block');
+                
+                fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.sets_data && data.sets_data.length > 0) {
+                            lastWorkoutData = data;
+                            showLastWorkoutTooltip(exerciseName, data);
+                            autoFillFirstSetWeight(exerciseBlock, data.sets_data);
+                        } else {
+                            hideLastWorkoutTooltip();
+                            lastWorkoutData = null;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取上次训练数据失败:', err);
                         hideLastWorkoutTooltip();
-                        lastWorkoutData = null;
-                    }
-                })
-                .catch(err => {
-                    console.error('获取上次训练数据失败:', err);
-                    hideLastWorkoutTooltip();
-                });
+                    });
+            }, 100);
         }
         
         function showLastWorkoutTooltip(exerciseName, data) {
@@ -2350,7 +2441,7 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
@@ -2374,9 +2465,13 @@
             let defaultWeight = '';
             // 如果不是第一组，尝试获取上一组的重量
             if (setCount > 1) {
-                const previousSetWeightInput = setsContainer.querySelector(`.set-item:last-child .set-weight`);
-                if (previousSetWeightInput) {
-                    defaultWeight = previousSetWeightInput.value;
+                const previousSets = setsContainer.querySelectorAll('.set-item');
+                if (previousSets.length > 0) {
+                    const lastSet = previousSets[previousSets.length - 1];
+                    const weightInput = lastSet.querySelector('.set-weight');
+                    if (weightInput && weightInput.value) {
+                        defaultWeight = weightInput.value;
+                    }
                 }
             }
 
@@ -2384,9 +2479,9 @@
             setDiv.className = 'set-item flex items-center gap-2';
             setDiv.innerHTML = `
                 <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                <input type="number" placeholder="重量(kg)" value="${defaultWeight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <input type="number" placeholder="重量(kg)" value="${defaultWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                 <span class="text-gray-500">x</span>
-                <input type="number" placeholder="次数" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <input type="number" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                 <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
             `;
             setsContainer.appendChild(setDiv);
@@ -2397,27 +2492,37 @@
         function addMultipleSetsToExercise(exerciseId, count) {
             const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
 
-            // 弹出输入框让用户输入重量
-            const weight = prompt(`请输入${count}组的重量 (kg):`, '');
-            if (weight === null) return; // 用户取消
-
-            const defaultWeight = weight.trim();
-
-            // 添加count组
-            for (let i = 0; i < count; i++) {
-                const setCount = setsContainer.children.length + 1;
-                const setDiv = document.createElement('div');
-                setDiv.className = 'set-item flex items-center gap-2';
-                setDiv.innerHTML = `
-                    <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                    <input type="number" placeholder="重量(kg)" value="${defaultWeight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
-                    <span class="text-gray-500">x</span>
-                    <input type="number" placeholder="次数" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
-                    <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
-                `;
-                setsContainer.appendChild(setDiv);
+            // 获取上一组的重量作为默认值
+            let defaultWeight = '';
+            const previousSets = setsContainer.querySelectorAll('.set-item');
+            if (previousSets.length > 0) {
+                const lastSet = previousSets[previousSets.length - 1];
+                const weightInput = lastSet.querySelector('.set-weight');
+                if (weightInput && weightInput.value) {
+                    defaultWeight = weightInput.value;
+                }
             }
-            saveSessionToLocalStorage(); // 添加完成后保存
+
+            // 弹出输入框让用户输入重量
+            showInputModal(`请输入${count}组的重量 (kg)`, defaultWeight, function(finalWeight) {
+                if (finalWeight === null || finalWeight === undefined) return; // 用户取消
+                
+                // 添加count组
+                for (let i = 0; i < count; i++) {
+                    const setCount = setsContainer.children.length + 1;
+                    const setDiv = document.createElement('div');
+                    setDiv.className = 'set-item flex items-center gap-2';
+                    setDiv.innerHTML = `
+                        <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
+                        <input type="number" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                        <span class="text-gray-500">x</span>
+                        <input type="number" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                        <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                    `;
+                    setsContainer.appendChild(setDiv);
+                }
+                saveSessionToLocalStorage(); // 添加完成后保存
+            });
         }
 
         function updateSetNumbers(exerciseId) {
