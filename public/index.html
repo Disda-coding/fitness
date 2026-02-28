@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1259,7 +1259,7 @@
             color: rgba(60, 60, 67, 0.8);
         }
         
-        @media (min-width: 768px) {
+        @media (min-width: 1024px) {
             .last-workout-tooltip {
                 right: auto;
                 left: 50%;
@@ -1268,25 +1268,25 @@
                 max-width: 320px;
                 padding: 16px 20px;
             }
-            
+
             @keyframes tooltipFadeIn {
                 from { opacity: 0; transform: translateX(-50%) translateY(-50%) scale(0.95); }
                 to { opacity: 1; transform: translateX(-50%) translateY(-50%) scale(1); }
             }
-            
+
             @keyframes tooltipFadeOut {
                 from { opacity: 1; transform: translateX(-50%) translateY(-50%) scale(1); }
                 to { opacity: 0; transform: translateX(-50%) translateY(-50%) scale(0.95); }
             }
-            
+
             .last-workout-tooltip .tooltip-header {
                 font-size: 0.9rem;
             }
-            
+
             .last-workout-tooltip .tooltip-date {
                 font-size: 0.8rem;
             }
-            
+
             .last-workout-tooltip .tooltip-set {
                 font-size: 0.95rem;
                 padding: 6px 0;
@@ -2145,7 +2145,7 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
+                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
@@ -2441,7 +2441,7 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();" onclick="if(this.value && this.value !== 'add_new') fetchAndShowLastWorkout(this);"></select>
+                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="sets-container mt-3 space-y-2"></div>
