@@ -631,8 +631,9 @@
             padding: 1rem 0;
             margin: -2rem 0 1.5rem 0;
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
+            gap: 0.5rem;
         }
         
         .page-header h1 {
@@ -641,10 +642,12 @@
         
         .page-header .btn-action {
             justify-self: start;
+            margin-left: 0.5rem;
         }
         
         .page-header .spacer {
             justify-self: end;
+            margin-right: 0.5rem;
         }
         
         [data-theme="dark"] .page-header {
