@@ -1334,7 +1334,7 @@
                 
                 <div class="muscle-card" onclick="showTrainingPage('legs', '腿部训练')">
                     <div class="muscle-icon">🦵</div>
-                    <div class="muscle-name">腿 & 核心</div>
+                    <div class="muscle-name">腿部训练</div>
                 </div>
                 
                 <div class="muscle-card" onclick="showExerciseManagementPage()">
@@ -1419,7 +1419,7 @@
                 <option value="chest">胸 & 三头</option>
                 <option value="back">背 & 二头</option>
                 <option value="shoulders">肩部</option>
-                <option value="legs">腿 & 核心</option>
+                <option value="legs">腿部训练</option>
             </select>
             
             <div class="mt-6">
@@ -1553,6 +1553,7 @@
         let availableExercises = []; // 可用的动作列表
         let customExercises = []; // 自定义动作列表
         let commonExercises = []; // 公用动作列表
+        let exerciseFrequency = {}; // 动作频率数据
 
         // --- Theme Management ---
         function getSystemTheme() {
@@ -2276,6 +2277,7 @@
                 customExercises = data.custom || [];
                 commonExercises = data.common || [];
                 availableExercises = data.all || [];
+                exerciseFrequency = data.frequency || {};
             } catch (error) {
                 console.error(error);
                 showModal('错误', '加载预设动作列表失败。');
@@ -2514,8 +2516,56 @@
             document.getElementById('current-session-container').appendChild(exerciseDiv);
             // 自动为新动作添加1组
             addSetToExercise(exerciseId);
-            updateAllExerciseDropdowns(); // 更新新添加的下拉菜单
+            // 更新下拉菜单并选择频率最高但未选择过的动作
+            updateExerciseDropdownForNewExercise(exerciseDiv.querySelector('.exercise-select'));
             saveSessionToLocalStorage(); // 添加新动作块后保存
+        }
+
+        // 为新添加的动作选择频率最高但未选择过的动作
+        function updateExerciseDropdownForNewExercise(select) {
+            let optionsHtml = '';
+            
+            // 获取已选择的动作列表
+            const selectedExercises = Array.from(document.querySelectorAll('.exercise-select')).map(s => s.value).filter(v => v && v !== 'add_new');
+            
+            // 自定义动作组
+            if (customExercises.length > 0) {
+                optionsHtml += '<optgroup label="自定义动作">';
+                customExercises.forEach(ex => {
+                    optionsHtml += `<option value="${ex}">${ex}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            // 公用动作组
+            if (commonExercises.length > 0) {
+                optionsHtml += '<optgroup label="公用动作">';
+                commonExercises.forEach(ex => {
+                    optionsHtml += `<option value="${ex}">${ex}</option>`;
+                });
+                optionsHtml += '</optgroup>';
+            }
+            
+            optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
+            select.innerHTML = optionsHtml;
+            
+            // 选择频率最高但未选择过的动作
+            const unselectedExercises = availableExercises.filter(ex => !selectedExercises.includes(ex));
+            if (unselectedExercises.length > 0) {
+                // 按频率排序（频率高的在前）
+                const sortedByFrequency = unselectedExercises.sort((a, b) => {
+                    const freqA = exerciseFrequency[a] || 0;
+                    const freqB = exerciseFrequency[b] || 0;
+                    return freqB - freqA;
+                });
+                select.value = sortedByFrequency[0];
+                // 显示上次训练浮窗
+                fetchAndShowLastWorkout(select);
+            } else if (availableExercises.length > 0) {
+                // 如果所有动作都已选择，则选择第一个
+                select.value = availableExercises[0];
+                fetchAndShowLastWorkout(select);
+            }
         }
 
         function addSetToExercise(exerciseId) {

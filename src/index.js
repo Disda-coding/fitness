@@ -36,6 +36,18 @@ app.get('/exercises/:muscle', async (c) => {
       "SELECT exercise_name FROM common_exercises ORDER BY exercise_name"
     ).all();
     
+    // Core exercises (always included as common exercises)
+    const coreExercises = ['卷腹', '平板支撑', '俄罗斯转体', '悬垂举腿', '仰卧抬腿'];
+    
+    // Merge core exercises with common exercises from DB (avoid duplicates)
+    const existingCommonNames = commonResults.map(r => r.exercise_name);
+    const mergedCommonResults = [...commonResults];
+    coreExercises.forEach(coreEx => {
+      if (!existingCommonNames.includes(coreEx)) {
+        mergedCommonResults.push({ exercise_name: coreEx });
+      }
+    });
+    
     // Get exercise frequency from workout history for this muscle group
     const { results: sessionResults } = await c.env.DB.prepare(
       "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ?"
@@ -56,7 +68,7 @@ app.get('/exercises/:muscle', async (c) => {
     });
     
     const custom = customResults.map(r => r.exercise_name);
-    const common = commonResults.map(r => r.exercise_name);
+    const common = mergedCommonResults.map(r => r.exercise_name);
     
     // Sort by frequency (descending), then alphabetically
     const sortByFrequency = (a, b) => {
