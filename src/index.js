@@ -36,7 +36,7 @@ app.use('*', cors({
   credentials: true,
 }));
 
-// --- Auth Middleware ---
+// --- Auth Middleware (optional, sets userId) ---
 app.use('*', async (c, next) => {
   const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
   let userId = null;
@@ -59,6 +59,15 @@ app.use('*', async (c, next) => {
   c.set('userId', userId);
   await next();
 });
+
+// --- Require Auth Middleware (blocks unauthenticated requests) ---
+const requireAuth = async (c, next) => {
+  const userId = c.get('userId');
+  if (!userId) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+  await next();
+};
 
 // --- Auth Routes ---
 
@@ -157,7 +166,6 @@ app.get('/auth/callback', async (c) => {
       ).bind(githubUser.id, githubUser.login, githubUser.avatar_url).run();
       userId = result.meta.last_row_id;
 
-      // First login: migrate existing data to this user
       await c.env.DB.prepare(
         "UPDATE workout_sessions SET user_id = ? WHERE user_id IS NULL"
       ).bind(userId).run();
@@ -233,33 +241,23 @@ app.post('/auth/logout', async (c) => {
 // --- API Endpoints for Custom Exercises ---
 
 // 1. Get all exercises for a specific muscle group (custom + common) with frequency
-app.get('/exercises/:muscle', async (c) => {
+app.get('/exercises/:muscle', requireAuth, async (c) => {
   const muscle = c.req.param('muscle');
   const userId = c.get('userId');
   if (!muscle) {
     return c.json({ error: 'Muscle group is required' }, 400);
   }
   try {
-    // Get custom exercises for this user (or without user_id for backward compat)
-    let customQuery, customParams;
-    if (userId) {
-      customQuery = "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY exercise_name";
-      customParams = [muscle, userId];
-    } else {
-      customQuery = "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? ORDER BY exercise_name";
-      customParams = [muscle];
-    }
-    const { results: customResults } = await c.env.DB.prepare(customQuery).bind(...customParams).all();
+    const { results: customResults } = await c.env.DB.prepare(
+      "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? AND user_id = ? ORDER BY exercise_name"
+    ).bind(muscle, userId).all();
 
-    // Get common exercises
     const { results: commonResults } = await c.env.DB.prepare(
       "SELECT exercise_name FROM common_exercises ORDER BY exercise_name"
     ).all();
 
-    // Core exercises (always included as common exercises)
     const coreExercises = ['卷腹', '平板支撑', '俄罗斯转体', '悬垂举腿', '仰卧抬腿'];
 
-    // Merge core exercises with common exercises from DB (avoid duplicates)
     const existingCommonNames = commonResults.map(r => r.exercise_name);
     const mergedCommonResults = [...commonResults];
     coreExercises.forEach(coreEx => {
@@ -268,16 +266,9 @@ app.get('/exercises/:muscle', async (c) => {
       }
     });
 
-    // Get exercise frequency from workout history for this muscle group
-    let sessionQuery, sessionParams;
-    if (userId) {
-      sessionQuery = "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL)";
-      sessionParams = [muscle, userId];
-    } else {
-      sessionQuery = "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ?";
-      sessionParams = [muscle];
-    }
-    const { results: sessionResults } = await c.env.DB.prepare(sessionQuery).bind(...sessionParams).all();
+    const { results: sessionResults } = await c.env.DB.prepare(
+      "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND user_id = ?"
+    ).bind(muscle, userId).all();
 
     // Count exercise frequency
     const frequency = {};
@@ -321,7 +312,7 @@ app.get('/exercises/:muscle', async (c) => {
 });
 
 // 2. Add a new custom exercise
-app.post('/exercises', async (c) => {
+app.post('/exercises', requireAuth, async (c) => {
   try {
     const userId = c.get('userId');
     const { muscle_group, exercise_name } = await c.req.json();
@@ -340,7 +331,7 @@ app.post('/exercises', async (c) => {
 });
 
 // 3. Update exercise name (for both custom and common exercises)
-app.put('/exercises', async (c) => {
+app.put('/exercises', requireAuth, async (c) => {
   try {
     const userId = c.get('userId');
     const { muscle_group, old_name, new_name } = await c.req.json();
@@ -350,24 +341,16 @@ app.put('/exercises', async (c) => {
 
     const trimmedNewName = new_name.trim();
 
-    // First try to update in custom_exercises
     if (muscle_group) {
-      let customQuery, customParams;
-      if (userId) {
-        customQuery = "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ? AND (user_id = ? OR user_id IS NULL)";
-        customParams = [trimmedNewName, muscle_group, old_name, userId];
-      } else {
-        customQuery = "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ?";
-        customParams = [trimmedNewName, muscle_group, old_name];
-      }
-      const customResult = await c.env.DB.prepare(customQuery).bind(...customParams).run();
+      const customResult = await c.env.DB.prepare(
+        "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ? AND user_id = ?"
+      ).bind(trimmedNewName, muscle_group, old_name, userId).run();
 
       if (customResult.success && customResult.meta.changes > 0) {
         return c.json({ success: true, message: 'Custom exercise updated successfully.' });
       }
     }
 
-    // If not found in custom, try to update in common_exercises
     const commonResult = await c.env.DB.prepare(
       "UPDATE common_exercises SET exercise_name = ? WHERE exercise_name = ?"
     ).bind(trimmedNewName, old_name).run();
@@ -384,7 +367,7 @@ app.put('/exercises', async (c) => {
 });
 
 // 4. Delete a custom exercise
-app.delete('/exercises', async (c) => {
+app.delete('/exercises', requireAuth, async (c) => {
   try {
     const userId = c.get('userId');
     const { muscle_group, exercise_name } = await c.req.json();
@@ -392,15 +375,9 @@ app.delete('/exercises', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    let deleteQuery, deleteParams;
-    if (userId) {
-      deleteQuery = "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ? AND (user_id = ? OR user_id IS NULL)";
-      deleteParams = [muscle_group, exercise_name, userId];
-    } else {
-      deleteQuery = "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ?";
-      deleteParams = [muscle_group, exercise_name];
-    }
-    const { success } = await c.env.DB.prepare(deleteQuery).bind(...deleteParams).run();
+    const { success } = await c.env.DB.prepare(
+      "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ? AND user_id = ?"
+    ).bind(muscle_group, exercise_name, userId).run();
 
     if (success) {
       return c.json({ success: true, message: 'Exercise deleted successfully.' });
@@ -430,7 +407,7 @@ app.get('/common-exercises', async (c) => {
 });
 
 // 6. Add a new common exercise
-app.post('/common-exercises', async (c) => {
+app.post('/common-exercises', requireAuth, async (c) => {
   try {
     const { exercise_name } = await c.req.json();
     if (!exercise_name) {
@@ -449,7 +426,7 @@ app.post('/common-exercises', async (c) => {
 });
 
 // 7. Update a common exercise
-app.put('/common-exercises', async (c) => {
+app.put('/common-exercises', requireAuth, async (c) => {
   try {
     const { old_name, new_name } = await c.req.json();
     if (!old_name || !new_name) {
@@ -472,7 +449,7 @@ app.put('/common-exercises', async (c) => {
 });
 
 // 8. Delete a common exercise
-app.delete('/common-exercises', async (c) => {
+app.delete('/common-exercises', requireAuth, async (c) => {
   try {
     const { exercise_name } = await c.req.json();
     if (!exercise_name) {
@@ -497,7 +474,7 @@ app.delete('/common-exercises', async (c) => {
 // --- API Endpoints for Workout Sessions ---
 
 // 9. Get last workout data for a specific exercise in a muscle group
-app.get('/last-workout/:muscle/:exercise', async (c) => {
+app.get('/last-workout/:muscle/:exercise', requireAuth, async (c) => {
   const muscle = c.req.param('muscle');
   const exercise = c.req.param('exercise');
   const userId = c.get('userId');
@@ -505,15 +482,9 @@ app.get('/last-workout/:muscle/:exercise', async (c) => {
     return c.json({ error: 'Muscle group and exercise are required' }, 400);
   }
   try {
-    let query, params;
-    if (userId) {
-      query = "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY session_date DESC, session_id DESC LIMIT 5";
-      params = [muscle, userId];
-    } else {
-      query = "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? ORDER BY session_date DESC, session_id DESC LIMIT 5";
-      params = [muscle];
-    }
-    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    const { results } = await c.env.DB.prepare(
+      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND user_id = ? ORDER BY session_date DESC, session_id DESC LIMIT 5"
+    ).bind(muscle, userId).all();
 
     // Find the exercise in the sessions
     for (const session of results) {
@@ -539,22 +510,16 @@ app.get('/last-workout/:muscle/:exercise', async (c) => {
 });
 
 // 10. Get workout history (all sessions) for a muscle group
-app.get('/history/:muscle', async (c) => {
+app.get('/history/:muscle', requireAuth, async (c) => {
   const muscle = c.req.param('muscle');
   const userId = c.get('userId');
   if (!muscle) {
     return c.json({ error: 'Muscle group is required' }, 400);
   }
   try {
-    let query, params;
-    if (userId) {
-      query = "SELECT session_id, session_date, exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY session_date DESC, session_id DESC";
-      params = [muscle, userId];
-    } else {
-      query = "SELECT session_id, session_date, exercises_data FROM workout_sessions WHERE muscle_group = ? ORDER BY session_date DESC, session_id DESC";
-      params = [muscle];
-    }
-    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    const { results } = await c.env.DB.prepare(
+      "SELECT session_id, session_date, exercises_data FROM workout_sessions WHERE muscle_group = ? AND user_id = ? ORDER BY session_date DESC, session_id DESC"
+    ).bind(muscle, userId).all();
 
     // Before sending the data, parse the JSON string in 'exercises_data' back into an object
     results.forEach(session => {
@@ -574,7 +539,7 @@ app.get('/history/:muscle', async (c) => {
 });
 
 // 11. Save a new workout session
-app.post('/session', async (c) => {
+app.post('/session', requireAuth, async (c) => {
   try {
     const userId = c.get('userId');
     const { muscle_group, exercises_data } = await c.req.json();
@@ -600,22 +565,16 @@ app.post('/session', async (c) => {
 });
 
 // 12. Delete a specific workout session
-app.delete('/session/:id', async (c) => {
+app.delete('/session/:id', requireAuth, async (c) => {
   const sessionId = c.req.param('id');
   const userId = c.get('userId');
   if (!sessionId) {
     return c.json({ error: 'Session ID is required' }, 400);
   }
   try {
-    let query, params;
-    if (userId) {
-      query = "DELETE FROM workout_sessions WHERE session_id = ? AND (user_id = ? OR user_id IS NULL)";
-      params = [sessionId, userId];
-    } else {
-      query = "DELETE FROM workout_sessions WHERE session_id = ?";
-      params = [sessionId];
-    }
-    const { success } = await c.env.DB.prepare(query).bind(...params).run();
+    const { success } = await c.env.DB.prepare(
+      "DELETE FROM workout_sessions WHERE session_id = ? AND user_id = ?"
+    ).bind(sessionId, userId).run();
 
     if (success) {
       return c.json({ success: true, message: 'Session deleted successfully!' });

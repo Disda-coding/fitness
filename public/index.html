@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1308,6 +1308,115 @@
                 padding: 6px 0;
             }
         }
+
+        /* Login Page */
+        .login-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-page .login-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: loginBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes loginBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .login-page .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-page .login-subtitle {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 2.5rem;
+        }
+
+        [data-theme="light"] .login-page .login-subtitle {
+            color: rgba(60, 60, 67, 0.6);
+        }
+
+        .login-page .login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: #24292e;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 240px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-page .login-btn:hover {
+            background: #2f363d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-page .login-btn i {
+            font-size: 1.25rem;
+        }
+
+        .login-page .login-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 3rem;
+            max-width: 400px;
+        }
+
+        .login-page .login-feature {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="light"] .login-page .login-feature {
+            background: rgba(255, 255, 255, 0.72);
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .login-page .login-feature .feature-icon {
+            font-size: 1.5rem;
+        }
+
+        .login-page .login-feature .feature-text {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        [data-theme="light"] .login-page .login-feature .feature-text {
+            color: rgba(60, 60, 67, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -1317,8 +1426,35 @@
     </button>
     
     <div class="app-container">
+        <!-- 登录页面 -->
+        <div id="login-page" class="page">
+            <div class="login-page">
+                <div class="login-logo">🏋️</div>
+                <h1 class="login-title">健身追踪器</h1>
+                <p class="login-subtitle">记录你的每一次训练，见证身体的变化</p>
+                <button class="login-btn" onclick="loginWithGithub()">
+                    <i class="fab fa-github"></i>
+                    <span>使用 GitHub 登录</span>
+                </button>
+                <div class="login-features">
+                    <div class="login-feature">
+                        <span class="feature-icon">📊</span>
+                        <span class="feature-text">训练记录</span>
+                    </div>
+                    <div class="login-feature">
+                        <span class="feature-icon">📈</span>
+                        <span class="feature-text">进度追踪</span>
+                    </div>
+                    <div class="login-feature">
+                        <span class="feature-icon">🎯</span>
+                        <span class="feature-text">训练计划</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 主页 -->
-        <div id="home-page" class="page active">
+        <div id="home-page" class="page">
             <div class="app-header">
                 <div class="flex items-center justify-between mb-2">
                     <div></div>
@@ -1561,7 +1697,7 @@
 
     <!-- JavaScript部分保持不变 -->
     <script>
-        const API_BASE_URL = ''; // 后端API的基础URL（部署时自动填充）
+        const API_BASE_URL = '';
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -1569,6 +1705,17 @@
         let commonExercises = []; // 公用动作列表
         let exerciseFrequency = {}; // 动作频率数据
         let currentUser = null; // 当前登录用户
+
+        // --- API Fetch Wrapper with 401 handling ---
+        async function apiFetch(url, options = {}) {
+            const response = await fetch(url, { ...options, credentials: 'include' });
+            if (response.status === 401) {
+                currentUser = null;
+                showLoginPage();
+                throw new Error('Authentication required');
+            }
+            return response;
+        }
 
         // --- Auth Management ---
         async function checkAuthStatus() {
@@ -1583,7 +1730,11 @@
             } catch (e) {
                 currentUser = null;
             }
-            updateUserArea();
+            if (currentUser) {
+                updateUserArea();
+            } else {
+                showLoginPage();
+            }
         }
 
         function loginWithGithub() {
@@ -1595,7 +1746,7 @@
                 await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
             } catch (e) {}
             currentUser = null;
-            updateUserArea();
+            showLoginPage();
         }
 
         function handleAuthCallback() {
@@ -1607,6 +1758,10 @@
                 showModal('登录失败', 'GitHub 登录失败，请重试。');
                 history.replaceState(null, '', window.location.pathname);
             }
+        }
+
+        function showLoginPage() {
+            showPage('login-page');
         }
 
         function updateUserArea() {
@@ -2073,7 +2228,7 @@
             try {
                 if (loader) loader.classList.remove('hidden');
                 
-                const response = await fetch(`${API_BASE_URL}/common-exercises`, { credentials: 'include' });
+                const response = await apiFetch(`${API_BASE_URL}/common-exercises`);
                 if (!response.ok) throw new Error('加载公用动作失败');
                 
                 commonExercises = await response.json();
@@ -2130,9 +2285,8 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
                     method: 'PUT',
-                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ old_name: oldName, new_name: newName.trim() })
                 });
@@ -2166,9 +2320,8 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
                     method: 'POST',
-                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ exercise_name: exerciseName })
                 });
@@ -2194,9 +2347,8 @@
                 `确定要删除公用动作 "${exerciseName}" 吗？`,
                 async () => {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/common-exercises`, {
+                        const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
                             method: 'DELETE',
-                            credentials: 'include',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ exercise_name: exerciseName })
                         });
@@ -2353,7 +2505,7 @@
         // --- 动作管理 (训练页面和动作管理页面共用) ---
         async function loadAvailableExercises() {
             try {
-                const response = await fetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`, { credentials: 'include' });
+                const response = await apiFetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
                 if (!response.ok) throw new Error('加载动作列表失败');
                 const data = await response.json();
                 // 后端返回 { custom: [...], common: [...], all: [...], frequency: {...} }
@@ -2439,9 +2591,8 @@
                 if (newExerciseName && newExerciseName.trim() !== '') {
                     try {
                         selectElement.disabled = true; // 禁用选择器，防止重复提交
-                        const response = await fetch(`${API_BASE_URL}/exercises`, {
+                        const response = await apiFetch(`${API_BASE_URL}/exercises`, {
                             method: 'POST',
-                            credentials: 'include',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ muscle_group: currentMuscleGroup, exercise_name: newExerciseName.trim() })
                         });
@@ -2497,7 +2648,7 @@
             fetchTooltipTimer = setTimeout(() => {
                 const exerciseBlock = selectElement.closest('.exercise-block');
                 
-                fetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`, { credentials: 'include' })
+                apiFetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.sets_data && data.sets_data.length > 0) {
@@ -2840,12 +2991,11 @@
             const id = setTimeout(() => controller.abort(), 5000); // 5-second timeout
 
             try {
-                const response = await fetch(`${API_BASE_URL}/session`, {
+                const response = await apiFetch(`${API_BASE_URL}/session`, {
                     method: 'POST',
-                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ muscle_group: currentMuscleGroup, exercises_data: exercisesData }),
-                    signal: controller.signal // Associate the abort controller with the fetch request
+                    signal: controller.signal
                 });
                 clearTimeout(id); // Clear the timeout if the request completes in time
 
@@ -2917,7 +3067,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/history/${currentMuscleGroup}`, { credentials: 'include' });
+                const response = await apiFetch(`${API_BASE_URL}/history/${currentMuscleGroup}`);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || '加载失败');
@@ -2969,7 +3119,7 @@
             // 使用自定义确认模态框替代原生的 confirm()
             showConfirmModal('确认删除', '确定要删除这次训练记录吗？此操作无法撤销。', async () => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE', credentials: 'include' });
+                    const response = await apiFetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE' });
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || '删除失败');
@@ -3029,7 +3179,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/exercises/${muscle}`, { credentials: 'include' });
+                const response = await apiFetch(`${API_BASE_URL}/exercises/${muscle}`);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || '加载动作列表失败');
@@ -3100,9 +3250,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/exercises`, {
+                const response = await apiFetch(`${API_BASE_URL}/exercises`, {
                     method: 'POST',
-                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ muscle_group: muscle, exercise_name: newExerciseName })
                 });
@@ -3131,9 +3280,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/exercises`, {
+                const response = await apiFetch(`${API_BASE_URL}/exercises`, {
                     method: 'PUT',
-                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ muscle_group: muscle, old_exercise_name: oldName, new_exercise_name: newName.trim() })
                 });
@@ -3156,9 +3304,8 @@
             // 使用自定义确认模态框替代原生的 confirm()
             showConfirmModal('确认删除', `确定要删除动作 "${exerciseName}" 吗？此操作无法撤销。`, async () => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/exercises`, {
+                    const response = await apiFetch(`${API_BASE_URL}/exercises`, {
                         method: 'DELETE',
-                        credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ muscle_group: muscle, exercise_name: exerciseName })
                     });
@@ -3182,7 +3329,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             handleAuthCallback();
             await checkAuthStatus();
-            showHomePage();
+            if (currentUser) {
+                showHomePage();
+            }
         });
     </script>
 </body>
