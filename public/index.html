@@ -2172,18 +2172,15 @@
                 }
             });
 
-            // 如果有实际数据（不仅仅是空的默认块），则保存到LocalStorage
+            // 如果有实际数据，则保存到LocalStorage
             if (exercisesData.length > 0) {
                 try {
                     localStorage.setItem(`currentSessionData_${currentMuscleGroup}`, JSON.stringify(exercisesData));
-                    // console.log(`Session for ${currentMuscleGroup} saved to LocalStorage.`);
                 } catch (e) {
                     console.error("保存到LocalStorage时出错:", e);
                 }
-            } else {
-                // 如果没有有效的训练数据，则清除旧的LocalStorage数据
-                localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
             }
+            // 不再在没有数据时删除缓存，避免网络不好时丢失数据
         }
 
         async function loadSessionFromLocalStorage() {
@@ -2243,6 +2240,14 @@
                             
                             optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加动作 --</option>';
                             selectElement.innerHTML = optionsHtml;
+                            
+                            // 如果动作名不在选项中，添加一个临时选项确保值能被设置
+                            if (exercise.exercise_name && !availableExercises.includes(exercise.exercise_name)) {
+                                const tempOption = document.createElement('option');
+                                tempOption.value = exercise.exercise_name;
+                                tempOption.textContent = exercise.exercise_name;
+                                selectElement.insertBefore(tempOption, selectElement.firstChild);
+                            }
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
                             
                             // 显示上次训练浮窗
@@ -2269,7 +2274,7 @@
                     }
                 } catch (e) {
                     console.error("解析LocalStorage数据时出错:", e);
-                    localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // 清除损坏的数据
+                    // 不删除缓存数据，保留以防数据丢失
                 }
             }
             return false; // 没有找到数据或加载失败
@@ -2286,9 +2291,29 @@
                 commonExercises = data.common || [];
                 availableExercises = data.all || [];
                 exerciseFrequency = data.frequency || {};
+                // 缓存动作列表到localStorage
+                localStorage.setItem(`exerciseCache_${currentMuscleGroup}`, JSON.stringify({
+                    custom: customExercises,
+                    common: commonExercises,
+                    all: availableExercises,
+                    frequency: exerciseFrequency,
+                    timestamp: Date.now()
+                }));
             } catch (error) {
                 console.error(error);
-                showModal('错误', '加载预设动作列表失败。');
+                // 网络失败时尝试从缓存加载
+                const cached = localStorage.getItem(`exerciseCache_${currentMuscleGroup}`);
+                if (cached) {
+                    try {
+                        const data = JSON.parse(cached);
+                        customExercises = data.custom || [];
+                        commonExercises = data.common || [];
+                        availableExercises = data.all || [];
+                        exerciseFrequency = data.frequency || {};
+                    } catch (e) {
+                        console.error('解析缓存动作列表失败:', e);
+                    }
+                }
             }
         }
 
@@ -2318,7 +2343,14 @@
                 
                 optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
                 select.innerHTML = optionsHtml;
-                if (currentValue && availableExercises.includes(currentValue)) {
+                if (currentValue && currentValue !== 'add_new') {
+                    // 如果当前值不在选项中，添加临时选项确保值能被恢复
+                    if (!availableExercises.includes(currentValue)) {
+                        const tempOption = document.createElement('option');
+                        tempOption.value = currentValue;
+                        tempOption.textContent = currentValue;
+                        select.insertBefore(tempOption, select.firstChild);
+                    }
                     select.value = currentValue; // 恢复之前选中的值
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
