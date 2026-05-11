@@ -16,12 +16,18 @@ fi
 echo "📝 设置生产环境 API_BASE_URL..."
 sed -i '' "s|const API_BASE_URL = '$EMPTY_URL'|const API_BASE_URL = '$PROD_URL'|g" "$FILE"
 
+# 确保部署后恢复URL（即使出错也恢复）
+restore_url() {
+    echo "🔄 恢复开发环境配置..."
+    sed -i '' "s|const API_BASE_URL = '$PROD_URL'|const API_BASE_URL = '$EMPTY_URL'|g" "$FILE"
+    echo "✅ 配置已恢复！"
+}
+
+# 捕获退出信号，确保恢复
+trap restore_url EXIT
+
 # 部署到 Cloudflare Pages
 echo "📤 部署中..."
 npx wrangler pages deploy public --project-name=fitness
-
-# 恢复空 URL
-echo "🔄 恢复开发环境配置..."
-sed -i '' "s|const API_BASE_URL = '$PROD_URL'|const API_BASE_URL = '$EMPTY_URL'|g" "$FILE"
 
 echo "✅ 部署完成！"
