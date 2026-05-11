@@ -1,14 +1,34 @@
 -- 为了安全起见，先删除旧表
 DROP TABLE IF EXISTS workouts;
 
+-- 新建: 用户表
+-- 存储通过 GitHub OAuth 登录的用户信息
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  github_id INTEGER NOT NULL UNIQUE,
+  username TEXT NOT NULL,
+  avatar_url TEXT,
+  created_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+
+-- 新建: 会话表
+-- 存储用户登录会话，支持长期保持登录
+CREATE TABLE IF NOT EXISTS sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  token TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+
 -- 新建: 自定义动作表
 -- 用于存储用户添加的动作，方便后续从下拉框选择
 CREATE TABLE IF NOT EXISTS custom_exercises (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   muscle_group TEXT NOT NULL,
   exercise_name TEXT NOT NULL,
-  -- 确保同一部位下的动作名称是唯一的
-  UNIQUE (muscle_group, exercise_name)
+  user_id INTEGER REFERENCES users(id),
+  UNIQUE (muscle_group, exercise_name, user_id)
 );
 
 -- 新建: 训练会话表
@@ -17,8 +37,8 @@ CREATE TABLE IF NOT EXISTS workout_sessions (
   session_id INTEGER PRIMARY KEY AUTOINCREMENT,
   muscle_group TEXT NOT NULL,
   session_date TEXT NOT NULL,
-  -- 使用 JSON 字符串来存储本次训练的所有动作和对应的组数数据
   exercises_data TEXT NOT NULL,
+  user_id INTEGER REFERENCES users(id),
   created_at TEXT DEFAULT (datetime('now', 'localtime'))
 );
 
