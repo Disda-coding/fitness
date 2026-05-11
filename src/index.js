@@ -178,7 +178,7 @@ app.get('/auth/callback', async (c) => {
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: true,
-      sameSite: 'Lax',
+      sameSite: 'None',
       maxAge: SESSION_MAX_AGE,
       path: '/',
     });
@@ -226,7 +226,7 @@ app.post('/auth/logout', async (c) => {
     }
   }
 
-  deleteCookie(c, SESSION_COOKIE_NAME, { path: '/' });
+  deleteCookie(c, SESSION_COOKIE_NAME, { path: '/', secure: true, sameSite: 'None' });
   return c.json({ success: true });
 });
 
