@@ -249,7 +249,7 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
   }
   try {
     const { results: customResults } = await c.env.DB.prepare(
-      "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? AND user_id = ? ORDER BY exercise_name"
+      "SELECT exercise_name FROM custom_exercises WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY exercise_name"
     ).bind(muscle, userId).all();
 
     const { results: commonResults } = await c.env.DB.prepare(
@@ -267,7 +267,7 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
     });
 
     const { results: sessionResults } = await c.env.DB.prepare(
-      "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND user_id = ?"
+      "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL)"
     ).bind(muscle, userId).all();
 
     // Count exercise frequency
@@ -343,7 +343,7 @@ app.put('/exercises', requireAuth, async (c) => {
 
     if (muscle_group) {
       const customResult = await c.env.DB.prepare(
-        "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ? AND user_id = ?"
+        "UPDATE custom_exercises SET exercise_name = ? WHERE muscle_group = ? AND exercise_name = ? AND (user_id = ? OR user_id IS NULL)"
       ).bind(trimmedNewName, muscle_group, old_name, userId).run();
 
       if (customResult.success && customResult.meta.changes > 0) {
@@ -376,7 +376,7 @@ app.delete('/exercises', requireAuth, async (c) => {
     }
 
     const { success } = await c.env.DB.prepare(
-      "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ? AND user_id = ?"
+      "DELETE FROM custom_exercises WHERE muscle_group = ? AND exercise_name = ? AND (user_id = ? OR user_id IS NULL)"
     ).bind(muscle_group, exercise_name, userId).run();
 
     if (success) {
@@ -483,7 +483,7 @@ app.get('/last-workout/:muscle/:exercise', requireAuth, async (c) => {
   }
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND user_id = ? ORDER BY session_date DESC, session_id DESC LIMIT 5"
+      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY session_date DESC, session_id DESC LIMIT 5"
     ).bind(muscle, userId).all();
 
     // Find the exercise in the sessions
@@ -518,7 +518,7 @@ app.get('/history/:muscle', requireAuth, async (c) => {
   }
   try {
     const { results } = await c.env.DB.prepare(
-      "SELECT session_id, session_date, exercises_data FROM workout_sessions WHERE muscle_group = ? AND user_id = ? ORDER BY session_date DESC, session_id DESC"
+      "SELECT session_id, session_date, exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY session_date DESC, session_id DESC"
     ).bind(muscle, userId).all();
 
     // Before sending the data, parse the JSON string in 'exercises_data' back into an object
@@ -573,7 +573,7 @@ app.delete('/session/:id', requireAuth, async (c) => {
   }
   try {
     const { success } = await c.env.DB.prepare(
-      "DELETE FROM workout_sessions WHERE session_id = ? AND user_id = ?"
+      "DELETE FROM workout_sessions WHERE session_id = ? AND (user_id = ? OR user_id IS NULL)"
     ).bind(sessionId, userId).run();
 
     if (success) {
