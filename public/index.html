@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1309,6 +1309,7 @@
             }
         }
 
+<<<<<<< HEAD
         /* Login Page */
         .login-page {
             display: flex;
@@ -1416,6 +1417,38 @@
 
         [data-theme="light"] .login-page .login-feature .feature-text {
             color: rgba(60, 60, 67, 0.6);
+        }
+
+        /* 超级组样式 */
+        .superset-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            font-size: 0.7rem;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        .tooltip-superset {
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 4px;
+            padding: 4px 6px !important;
+        }
+
+        [data-theme="light"] .superset-badge {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+        }
+
+        [data-theme="light"] .tooltip-superset {
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        .superset-hint {
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -2369,6 +2402,22 @@
             );
         }
 
+        // --- 格式化显示辅助函数 ---
+        function formatSetDisplay(set, index) {
+            const weight = set.weight;
+            const reps = set.reps;
+            const isSuperSet = (typeof weight === 'string' && weight.includes('-')) || (typeof reps === 'string' && reps.includes('-'));
+            
+            if (isSuperSet) {
+                // 超级组：用特殊样式显示
+                const weightStr = typeof weight === 'string' ? weight : String(weight);
+                const repsStr = typeof reps === 'string' ? reps : String(reps);
+                return `<span class="superset-badge">超级组</span> <span>${weightStr}kg</span> × <span>${repsStr}次</span>`;
+            } else {
+                return `<span>第${index + 1}组: ${weight}kg</span> × <span>${reps}次</span>`;
+            }
+        }
+
         // --- LocalStorage 数据管理 ---
         function saveSessionToLocalStorage() {
             const exerciseBlocks = document.querySelectorAll('#current-session-container .exercise-block');
@@ -2484,9 +2533,9 @@
                                 setDiv.className = 'set-item flex items-center gap-2';
                                 setDiv.innerHTML = `
                                     <span class="text-gray-400 w-12 text-sm">第${i + 1}组</span>
-                                    <input type="number" placeholder="重量(kg)" value="${set.weight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <input type="text" placeholder="重量(kg)" value="${set.weight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                                     <span class="text-gray-500">x</span>
-                                    <input type="number" placeholder="次数" value="${set.reps}" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <input type="text" placeholder="次数" value="${set.reps}" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                                     <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
                                 `;
                                 setsContainer.appendChild(setDiv);
@@ -2674,9 +2723,15 @@
             tooltip.className = 'last-workout-tooltip';
             tooltip.id = 'last-workout-tooltip';
             
-            let setsHtml = data.sets_data.map((set, i) => 
-                `<div class="tooltip-set">第${i + 1}组: <span>${set.weight}kg</span> × <span>${set.reps}次</span></div>`
-            ).join('');
+            let setsHtml = data.sets_data.map((set, i) => {
+                const weight = set.weight;
+                const reps = set.reps;
+                const isSuperSet = (typeof weight === 'string' && weight.includes('-')) || (typeof reps === 'string' && reps.includes('-'));
+                if (isSuperSet) {
+                    return `<div class="tooltip-set tooltip-superset"><span class="superset-badge">超级组</span> ${weight}kg × ${reps}次</div>`;
+                }
+                return `<div class="tooltip-set">第${i + 1}组: <span>${weight}kg</span> × <span>${reps}次</span></div>`;
+            }).join('');
             
             tooltip.innerHTML = `
                 <div class="tooltip-header">📚 上次训练参考</div>
@@ -2755,6 +2810,21 @@
                     }
                 }
             });
+            
+            // 如果上次训练有超级组，在输入框旁显示提示
+            const hasSuperSet = setsData.some(s => (typeof s.weight === 'string' && s.weight.includes('-')) || (typeof s.reps === 'string' && s.reps.includes('-')));
+            if (hasSuperSet) {
+                const firstSetItem = setItems[0];
+                if (firstSetItem && !firstSetItem.querySelector('.superset-hint')) {
+                    const hint = document.createElement('span');
+                    hint.className = 'superset-hint text-xs text-yellow-400 ml-1';
+                    hint.textContent = '超级组';
+                    const weightInput = firstSetItem.querySelector('.set-weight');
+                    if (weightInput) {
+                        weightInput.insertAdjacentElement('afterend', hint);
+                    }
+                }
+            }
         }
         
         // --- 当前训练会话管理 ---
@@ -2852,9 +2922,9 @@
             setDiv.className = 'set-item flex items-center gap-2';
             setDiv.innerHTML = `
                 <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                <input type="number" placeholder="重量(kg)" value="${defaultWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                <input type="text" placeholder="重量(kg)" value="${defaultWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                 <span class="text-gray-500">x</span>
-                <input type="number" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                 <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
             `;
             setsContainer.appendChild(setDiv);
@@ -2887,9 +2957,9 @@
                     setDiv.className = 'set-item flex items-center gap-2';
                     setDiv.innerHTML = `
                         <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                        <input type="number" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                         <span class="text-gray-500">x</span>
-                        <input type="number" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                         <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
                     `;
                     setsContainer.appendChild(setDiv);
@@ -2969,7 +3039,17 @@
                         lastValidWeight = weight; // 更新上一组的有效重量
                     }
 
-                    setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
+                    // 解析重量和次数：支持超级组格式（如 25-20-15 / 8-8-8）
+                    const isSuperSetWeight = weight.includes('-');
+                    const isSuperSetReps = reps.includes('-');
+                    
+                    if (isSuperSetWeight || isSuperSetReps) {
+                        // 超级组：保存为字符串格式
+                        setsData.push({ weight: weight, reps: reps });
+                    } else {
+                        // 普通组：保存为数字格式
+                        setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
+                    }
                 }
                 
                 if (setsData.length > 0) {
@@ -3099,7 +3179,7 @@
                                     <div>
                                         <p class="font-semibold text-white">${workout.exercise_name}</p>
                                         <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
-                                            ${workout.sets_data.map((s, i) => `<span>第${i+1}组: ${s.weight}kg &times; ${s.reps}次</span>`).join('<br>')}
+                                            ${workout.sets_data.map((s, i) => formatSetDisplay(s, i)).join('<br>')}
                                         </div>
                                     </div>
                         `;
