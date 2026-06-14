@@ -1720,7 +1720,7 @@
     <div id="input-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h3 id="input-modal-title" class="text-xl font-bold mb-3 text-white"></h3>
-            <input type="number" id="input-modal-field" inputmode="decimal" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
+            <input type="text" id="input-modal-field" inputmode="decimal" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
             <div class="flex gap-3">
                 <button id="input-modal-cancel" class="btn flex-1 bg-gray-600 hover:bg-gray-500 rounded-lg py-2 text-white">取消</button>
                 <button id="input-modal-confirm" class="btn flex-1 btn-primary">确定</button>
@@ -2946,18 +2946,23 @@
                 }
             }
 
-            // 弹出输入框让用户输入重量
-            showInputModal(`请输入${count}组的重量 (kg)`, defaultWeight, function(finalWeight) {
+            // 弹出输入框让用户输入重量（支持超级组格式如 25-20-15）
+            showInputModal(`请输入${count}组的重量 (kg)\n超级组用横杠分隔，如 25-20-15`, defaultWeight, function(finalWeight) {
                 if (finalWeight === null || finalWeight === undefined) return; // 用户取消
+                
+                // 解析超级组格式
+                const weights = finalWeight.includes('-') ? finalWeight.split('-') : null;
                 
                 // 添加count组
                 for (let i = 0; i < count; i++) {
                     const setCount = setsContainer.children.length + 1;
+                    // 超级组：每组填入对应位置的重量；普通组：所有组填入相同重量
+                    const weightValue = weights ? (weights[i] || weights[weights.length - 1]).trim() : finalWeight;
                     const setDiv = document.createElement('div');
                     setDiv.className = 'set-item flex items-center gap-2';
                     setDiv.innerHTML = `
                         <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                        <input type="text" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="重量(kg)" value="${weightValue}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                         <span class="text-gray-500">x</span>
                         <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                         <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
