@@ -302,7 +302,23 @@
         [data-theme="light"] #input-modal-cancel:hover {
             color: white !important;
         }
-        
+
+        [data-theme="light"] #input-modal-mode-toggle {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        [data-theme="light"] #input-modal-mode-toggle:hover {
+            background: #d1d5db;
+        }
+        [data-theme="light"] #input-modal-mode-toggle.superset-active {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+        }
+        [data-theme="light"] #input-modal-weight-label,
+        [data-theme="light"] #input-modal-reps-label {
+            color: #6b7280;
+        }
+
         [data-theme="light"] .btn-secondary {
             background: linear-gradient(180deg, #bf5af2 0%, #a855f7 100%);
             box-shadow: 0 2px 8px rgba(191, 90, 242, 0.25);
@@ -1450,6 +1466,14 @@
         .superset-hint {
             white-space: nowrap;
         }
+
+        #input-modal-mode-toggle.superset-active {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+        }
+        #input-modal-mode-toggle.superset-active:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -1720,7 +1744,15 @@
     <div id="input-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h3 id="input-modal-title" class="text-xl font-bold mb-3 text-white"></h3>
-            <input type="text" id="input-modal-field" inputmode="decimal" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
+            <button id="input-modal-mode-toggle" class="w-full mb-3 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600">切换为超级组模式</button>
+            <div class="mb-3">
+                <label class="text-sm text-gray-400 mb-1 block" id="input-modal-weight-label">重量 (kg)</label>
+                <input type="text" id="input-modal-field" inputmode="decimal" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
+            </div>
+            <div class="mb-4">
+                <label class="text-sm text-gray-400 mb-1 block" id="input-modal-reps-label">次数</label>
+                <input type="text" id="input-modal-reps-field" inputmode="numeric" class="w-full bg-gray-900 rounded p-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;">
+            </div>
             <div class="flex gap-3">
                 <button id="input-modal-cancel" class="btn flex-1 bg-gray-600 hover:bg-gray-500 rounded-lg py-2 text-white">取消</button>
                 <button id="input-modal-confirm" class="btn flex-1 btn-primary">确定</button>
@@ -2004,13 +2036,33 @@
         // --- 输入模态框逻辑 ---
         const inputModal = document.getElementById('input-modal');
         const inputModalField = document.getElementById('input-modal-field');
+        const inputModalRepsField = document.getElementById('input-modal-reps-field');
+        const inputModalModeToggle = document.getElementById('input-modal-mode-toggle');
         let inputModalCallback = null;
+        let inputModalSupersetMode = false;
 
-        function showInputModal(title, defaultValue, onConfirmCallback) {
+        // 超级组模式切换
+        inputModalModeToggle.addEventListener('click', function() {
+            inputModalSupersetMode = !inputModalSupersetMode;
+            this.classList.toggle('superset-active', inputModalSupersetMode);
+            this.textContent = inputModalSupersetMode ? '✓ 超级组模式' : '切换为超级组模式';
+            document.getElementById('input-modal-weight-label').textContent = inputModalSupersetMode ? '重量 (kg)，用 - 分隔每组重量' : '重量 (kg)';
+            document.getElementById('input-modal-reps-label').textContent = inputModalSupersetMode ? '次数，用 - 分隔每组次数' : '次数';
+        });
+
+        function showInputModal(title, defaultWeight, defaultReps, onConfirmCallback) {
             document.getElementById('input-modal-title').textContent = title;
-            inputModalField.value = defaultValue || '';
-            inputModalField.dataset.prevValue = defaultValue || '';
+            inputModalField.value = defaultWeight || '';
+            inputModalField.dataset.prevValue = defaultWeight || '';
+            inputModalRepsField.value = defaultReps || '';
+            inputModalRepsField.dataset.prevValue = defaultReps || '';
             inputModalCallback = onConfirmCallback;
+            // 重置超级组模式
+            inputModalSupersetMode = false;
+            inputModalModeToggle.classList.remove('superset-active');
+            inputModalModeToggle.textContent = '切换为超级组模式';
+            document.getElementById('input-modal-weight-label').textContent = '重量 (kg)';
+            document.getElementById('input-modal-reps-label').textContent = '次数';
             inputModal.classList.remove('hidden');
             setTimeout(() => inputModalField.focus(), 100);
         }
@@ -2018,19 +2070,34 @@
         function closeInputModal() {
             inputModal.classList.add('hidden');
             inputModalCallback = null;
+            inputModalSupersetMode = false;
         }
 
         document.getElementById('input-modal-cancel').onclick = closeInputModal;
-        
+
         document.getElementById('input-modal-confirm').onclick = function() {
             if (inputModalCallback) {
-                inputModalCallback(inputModalField.value.trim());
+                inputModalCallback({
+                    weight: inputModalField.value.trim(),
+                    reps: inputModalRepsField.value.trim(),
+                    isSuperset: inputModalSupersetMode
+                });
             }
             closeInputModal();
         };
 
+        // 重量输入框：Enter → 跳到次数；次数输入框：Enter → 确认
         inputModalField.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault();
+                inputModalRepsField.focus();
+            } else if (e.key === 'Escape') {
+                closeInputModal();
+            }
+        });
+        inputModalRepsField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
                 document.getElementById('input-modal-confirm').click();
             } else if (e.key === 'Escape') {
                 closeInputModal();
@@ -2482,7 +2549,7 @@
                                 <div class="sets-container mt-3 space-y-2"></div>
                                 <div class="flex gap-2 mt-2">
                                     <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
-                                    <button onclick="addMultipleSetsToExercise('${exerciseId}', 3); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
+                                    <button onclick="addMultipleSetsToExercise('${exerciseId}', 3);" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
                                 </div>
                             `;
                             document.getElementById('current-session-container').appendChild(exerciseDiv);
@@ -2842,7 +2909,7 @@
                 <div class="sets-container mt-3 space-y-2"></div>
                 <div class="flex gap-2 mt-2">
                     <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
-                    <button onclick="addMultipleSetsToExercise('${exerciseId}', 3); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
+                    <button onclick="addMultipleSetsToExercise('${exerciseId}', 3);" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
                 </div>
             `;
             document.getElementById('current-session-container').appendChild(exerciseDiv);
@@ -2935,39 +3002,56 @@
         function addMultipleSetsToExercise(exerciseId, count) {
             const setsContainer = document.querySelector(`#${exerciseId} .sets-container`);
 
-            // 获取上一组的重量作为默认值
+            // 获取上一组的重量和次数作为默认值
             let defaultWeight = '';
+            let defaultReps = '';
             const previousSets = setsContainer.querySelectorAll('.set-item');
             if (previousSets.length > 0) {
                 const lastSet = previousSets[previousSets.length - 1];
                 const weightInput = lastSet.querySelector('.set-weight');
+                const repsInput = lastSet.querySelector('.set-reps');
                 if (weightInput && weightInput.value) {
                     defaultWeight = weightInput.value;
                 }
+                if (repsInput && repsInput.value) {
+                    defaultReps = repsInput.value;
+                }
             }
 
-            // 弹出输入框让用户输入重量（支持超级组格式如 25-20-15）
-            showInputModal(`请输入${count}组的重量 (kg)\n超级组用横杠分隔，如 25-20-15`, defaultWeight, function(finalWeight) {
-                if (finalWeight === null || finalWeight === undefined) return; // 用户取消
-                
-                // 解析超级组格式
-                const weights = finalWeight.includes('-') ? finalWeight.split('-') : null;
-                
-                // 添加count组
-                for (let i = 0; i < count; i++) {
+            // 弹出输入框让用户输入重量和次数（支持超级组模式切换）
+            showInputModal(`添加 ${count} 组`, defaultWeight, defaultReps, function(result) {
+                if (!result) return; // 用户取消
+                const { weight, reps, isSuperset } = result;
+                if (!weight && !reps) return; // 什么都没填
+
+                if (isSuperset) {
+                    // 超级组模式：创建1行复合数据，重量和次数用横杠分隔
                     const setCount = setsContainer.children.length + 1;
-                    // 超级组：每组填入对应位置的重量；普通组：所有组填入相同重量
-                    const weightValue = weights ? (weights[i] || weights[weights.length - 1]).trim() : finalWeight;
                     const setDiv = document.createElement('div');
                     setDiv.className = 'set-item flex items-center gap-2';
                     setDiv.innerHTML = `
                         <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                        <input type="text" placeholder="重量(kg)" value="${weightValue}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="重量(kg)" value="${weight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                         <span class="text-gray-500">x</span>
-                        <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="次数" value="${reps}" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                         <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
                     `;
                     setsContainer.appendChild(setDiv);
+                } else {
+                    // 普通模式：创建N行，每行相同的重量和次数
+                    for (let i = 0; i < count; i++) {
+                        const setCount = setsContainer.children.length + 1;
+                        const setDiv = document.createElement('div');
+                        setDiv.className = 'set-item flex items-center gap-2';
+                        setDiv.innerHTML = `
+                            <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
+                            <input type="text" placeholder="重量(kg)" value="${weight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                            <span class="text-gray-500">x</span>
+                            <input type="text" placeholder="次数" value="${reps}" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                            <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                        `;
+                        setsContainer.appendChild(setDiv);
+                    }
                 }
                 saveSessionToLocalStorage(); // 添加完成后保存
             });
