@@ -2937,18 +2937,11 @@
             // 获取上一组的重量作为默认值
             let defaultWeight = '';
             const previousSets = setsContainer.querySelectorAll('.set-item');
-            // 收集之前N组的次数，用于自动填充新行的次数
-            const previousReps = [];
             if (previousSets.length > 0) {
                 const lastSet = previousSets[previousSets.length - 1];
                 const weightInput = lastSet.querySelector('.set-weight');
                 if (weightInput && weightInput.value) {
                     defaultWeight = weightInput.value;
-                }
-                const startIdx = Math.max(0, previousSets.length - count);
-                for (let j = startIdx; j < previousSets.length; j++) {
-                    const repsInput = previousSets[j].querySelector('.set-reps');
-                    previousReps.push(repsInput && repsInput.value ? repsInput.value : '');
                 }
             }
 
@@ -2956,18 +2949,16 @@
             showInputModal(`请输入${count}组的重量 (kg)\n超级组用横杠分隔，如 25-20-15`, defaultWeight, function(finalWeight) {
                 if (finalWeight === null || finalWeight === undefined) return; // 用户取消
 
-                // 添加count组，每行都填入用户输入的完整重量（超级组格式原样保留）
+                // 添加count组，只填入重量，不复制次数
                 for (let i = 0; i < count; i++) {
                     const setCount = setsContainer.children.length + 1;
-                    // 从之前对应位置的组获取次数
-                    const repsValue = previousReps[i] || '';
                     const setDiv = document.createElement('div');
                     setDiv.className = 'set-item flex items-center gap-2';
                     setDiv.innerHTML = `
                         <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
                         <input type="text" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                         <span class="text-gray-500">x</span>
-                        <input type="text" placeholder="次数" value="${repsValue}" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                        <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                         <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
                     `;
                     setsContainer.appendChild(setDiv);
