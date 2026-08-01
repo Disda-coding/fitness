@@ -482,15 +482,29 @@ app.get('/last-workout/:muscle/:exercise', requireAuth, async (c) => {
     return c.json({ error: 'Muscle group and exercise are required' }, 400);
   }
   try {
-    const { results } = await c.env.DB.prepare(
-      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) ORDER BY session_date DESC, session_id DESC LIMIT 5"
-    ).bind(muscle, userId).all();
+    // 优化1: 使用 SQL LIKE 直接过滤包含该动作的训练记录，避免取所有再遍历
+    // 优化2: 增大查询范围到 LIMIT 50，避免最近几次训练没有该动作时返回 null
+    // 优化3: 使用 ESCAPE 转义动作名中的 % 和 _ 字符，防止 SQL LIKE 误匹配
+    const escapedExercise = exercise.replace(/[%_\\]/g, '\\$&');
+    const likePattern = `%"exercise_name"%${escapedExercise}"%`;
 
-    // Find the exercise in the sessions
+    const { results } = await c.env.DB.prepare(
+      "SELECT exercises_data, session_date FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) AND exercises_data LIKE ? ESCAPE '\\' ORDER BY session_date DESC, session_id DESC LIMIT 50"
+    ).bind(muscle, userId, likePattern).all();
+
+    // 在结果中精确查找该动作（容错：trim + 大小写不敏感）
+    const exerciseTrimmed = exercise.trim().toLowerCase();
     for (const session of results) {
       try {
         const exercises = JSON.parse(session.exercises_data);
-        const found = exercises.find(ex => ex.exercise_name === exercise);
+        // 优先精确匹配
+        let found = exercises.find(ex => ex.exercise_name === exercise);
+        // 容错：trim + 大小写不敏感匹配
+        if (!found) {
+          found = exercises.find(ex =>
+            ex.exercise_name && ex.exercise_name.trim().toLowerCase() === exerciseTrimmed
+          );
+        }
         if (found && found.sets_data && found.sets_data.length > 0) {
           return c.json({
             sets_data: found.sets_data,
