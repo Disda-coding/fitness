@@ -2810,11 +2810,14 @@
                 }
             });
             
-            // 如果上次训练有超级组，在输入框旁显示提示
+            // 先清除该动作块中所有已存在的超级组提示标签，避免切换动作后残留
+            setsContainer.querySelectorAll('.superset-hint').forEach(el => el.remove());
+
+            // 如果上次训练有超级组，在第一组输入框旁显示提示
             const hasSuperSet = setsData.some(s => (typeof s.weight === 'string' && s.weight.includes('-')) || (typeof s.reps === 'string' && s.reps.includes('-')));
             if (hasSuperSet) {
                 const firstSetItem = setItems[0];
-                if (firstSetItem && !firstSetItem.querySelector('.superset-hint')) {
+                if (firstSetItem) {
                     const hint = document.createElement('span');
                     hint.className = 'superset-hint text-xs text-yellow-400 ml-1';
                     hint.textContent = '超级组';
