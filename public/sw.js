@@ -1,5 +1,5 @@
 // Service Worker: 健身追踪器 PWA 离线支持
-const CACHE_NAME = 'fitness-tracker-v2';
+const CACHE_NAME = 'fitness-tracker-v3';
 
 // 预缓存的应用外壳资源
 const PRECACHE_URLS = [
@@ -81,15 +81,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 页面导航：缓存优先（离线可秒开），后台静默更新
+  // 页面导航：缓存优先（离线可秒开），后台静默更新（同时更新导航URL和/index.html两个缓存条目）
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         const fetchPromise = fetchWithTimeout(event.request, 10000)
           .then((resp) => {
             if (resp && resp.status === 200) {
-              const clone = resp.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+              const c1 = resp.clone();
+              const c2 = resp.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, c1);   // 更新实际导航URL（如 /）
+                cache.put('/index.html', c2);   // 更新标准入口
+              });
             }
             return resp;
           })

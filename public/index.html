@@ -3800,13 +3800,41 @@
             });
             window.addEventListener('offline', () => updateSyncButtonUI('offline'));
 
-            // 注册 Service Worker（PWA离线支持）
+            // 注册 Service Worker（PWA离线支持）+ 检测云端新版本
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
+                    .then(reg => {
+                        console.log('SW registered:', reg.scope);
+                        // 已有SW在控制页面时，监听新SW安装完成 → 提示用户刷新获取新版
+                        if (navigator.serviceWorker.controller) {
+                            reg.addEventListener('updatefound', () => {
+                                const newWorker = reg.installing;
+                                if (!newWorker) return;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        showUpdateBanner();
+                                    }
+                                });
+                            });
+                        }
+                    })
                     .catch(err => console.error('SW registration failed:', err));
             }
         });
+
+        // 云端新版本就绪提示条（PWA自动检测更新）
+        function showUpdateBanner() {
+            if (document.getElementById('sw-update-banner')) return; // 已显示
+            const banner = document.createElement('div');
+            banner.id = 'sw-update-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;background:#1e40af;color:#fff;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+            banner.innerHTML = `
+                <span>🚀 云端有新版本</span>
+                <button onclick="location.reload()" style="background:#fff;color:#1e40af;border:none;padding:4px 14px;border-radius:6px;font-size:13px;font-weight:bold;cursor:pointer;">立即更新</button>
+                <button onclick="this.parentElement.remove()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">稍后</button>
+            `;
+            document.body.appendChild(banner);
+        }
     </script>
 </body>
 </html>
