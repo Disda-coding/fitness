@@ -35,10 +35,9 @@ function generateUUID() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-// --- Lazy Migration: 同步字段迁移（幂等，首次调用sync时执行） ---
-let migrationDone = false;
+// --- Lazy Migration: 同步字段迁移（幂等，每次调用sync时执行，开销极小） ---
+const UUID_SQL = "lower(hex(randomblob(8)) || '-' || hex(randomblob(4)) || '-4' || substr(hex(randomblob(3)),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))";
 async function ensureSyncColumns(env) {
-  if (migrationDone) return;
   const now = new Date().toISOString();
   const alters = [
     "ALTER TABLE workout_sessions ADD COLUMN uid TEXT",
@@ -53,12 +52,10 @@ async function ensureSyncColumns(env) {
   for (const sql of alters) {
     try { await env.DB.prepare(sql).run(); } catch (e) { /* duplicate column 忽略 */ }
   }
-  try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_workout_uid ON workout_sessions(uid)").run(); } catch (e) {}
-  try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_ex_uid ON custom_exercises(uid)").run(); } catch (e) {}
-  // 补齐已有记录的 uid / updated_at
+  // 先回填uid（SQL端randomblob每行独立生成），再建唯一索引
   try {
-    await env.DB.prepare("UPDATE workout_sessions SET uid = ?, updated_at = ? WHERE uid IS NULL").bind(generateUUID(), now).run();
-    await env.DB.prepare("UPDATE custom_exercises SET uid = ?, updated_at = ? WHERE uid IS NULL").bind(generateUUID(), now).run();
+    await env.DB.prepare(`UPDATE workout_sessions SET uid = ${UUID_SQL}, updated_at = ? WHERE uid IS NULL`).bind(now).run();
+    await env.DB.prepare(`UPDATE custom_exercises SET uid = ${UUID_SQL}, updated_at = ? WHERE uid IS NULL`).bind(now).run();
     await env.DB.prepare("UPDATE common_exercises SET updated_at = ? WHERE updated_at IS NULL").bind(now).run();
     await env.DB.prepare("UPDATE workout_sessions SET deleted = 0 WHERE deleted IS NULL").run();
     await env.DB.prepare("UPDATE custom_exercises SET deleted = 0 WHERE deleted IS NULL").run();
@@ -66,6 +63,8 @@ async function ensureSyncColumns(env) {
   } catch (e) {
     console.error('migration backfill error:', e);
   }
+  try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_workout_uid ON workout_sessions(uid)").run(); } catch (e) {}
+  try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_ex_uid ON custom_exercises(uid)").run(); } catch (e) {}
   try {
     await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_meta (
       user_id INTEGER NOT NULL,
@@ -75,7 +74,6 @@ async function ensureSyncColumns(env) {
       PRIMARY KEY (user_id, key)
     )`).run();
   } catch (e) {}
-  migrationDone = true;
 }
 
 // CORS with credentials support
