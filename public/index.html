@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>健身追踪器</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233a86ff'/%3E%3Cg fill='white'%3E%3Crect x='15' y='35' width='12' height='30' rx='3'/%3E%3Crect x='73' y='35' width='12' height='30' rx='3'/%3E%3Crect x='10' y='42' width='8' height='16' rx='2'/%3E%3Crect x='82' y='42' width='8' height='16' rx='2'/%3E%3Crect x='27' y='46' width='46' height='8' rx='2'/%3E%3C/g%3E%3C/svg%3E">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3a86ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/svg+xml" href="/icon.svg">
+    <link rel="apple-touch-icon" href="/icon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1496,6 +1501,14 @@
                 </div>
                 <h1 class="app-title">健身追踪器</h1>
                 <p class="app-subtitle">记录你的每一次训练，见证身体的变化</p>
+                <!-- 手动同步按钮 + 状态显示 -->
+                <div class="flex justify-center mt-3">
+                    <button id="sync-button" onclick="manualSync()"
+                            class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-700/60 hover:bg-gray-600/60 border border-gray-600/50 text-sm text-gray-300 transition-colors">
+                        <i class="fas fa-sync-alt text-xs" id="sync-icon"></i>
+                        <span id="sync-status-text">点击同步</span>
+                    </button>
+                </div>
             </div>
             
             <div class="grid-container">
@@ -1730,6 +1743,230 @@
     <!-- JavaScript部分保持不变 -->
     <script>
         const API_BASE_URL = '';
+
+        // ===== 离线同步系统 =====
+        // 本地localStorage为第一数据源，服务器为镜像；通过/api/sync双向合并（时间戳新者胜）
+        const LS_KEYS = {
+            workouts: 'sync_workouts_v1',
+            customExercises: 'sync_custom_exercises_v1',
+            commonExercises: 'sync_common_exercises_v1',
+            meta: 'sync_meta_v1',
+            lastSync: 'sync_last_time_v1'
+        };
+
+        function generateUUID() {
+            if (crypto.randomUUID) return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, ch => {
+                const r = Math.random() * 16 | 0;
+                return (ch === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        const localDB = {
+            _read(key, fallback) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    return raw ? JSON.parse(raw) : fallback;
+                } catch (e) { return fallback; }
+            },
+            _write(key, val) {
+                try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.error('localDB write fail:', e); }
+            },
+            getWorkouts() { return this._read(LS_KEYS.workouts, []); },
+            saveWorkouts(arr) { this._write(LS_KEYS.workouts, arr); },
+            getCustomExercises() { return this._read(LS_KEYS.customExercises, []); },
+            saveCustomExercises(arr) { this._write(LS_KEYS.customExercises, arr); },
+            getCommonExercises() { return this._read(LS_KEYS.commonExercises, []); },
+            saveCommonExercises(arr) { this._write(LS_KEYS.commonExercises, arr); },
+            getMetaAll() { return this._read(LS_KEYS.meta, {}); },
+            setMeta(key, value) {
+                const all = this.getMetaAll();
+                all[key] = { value: value, updated_at: new Date().toISOString() };
+                this._write(LS_KEYS.meta, all);
+            },
+            getMeta(key) {
+                const all = this.getMetaAll();
+                return all[key] ? all[key].value : undefined;
+            }
+        };
+
+        const syncManager = {
+            syncing: false,
+            needSync: false,   // 同步期间又有数据变更
+            onStateChange: null, // UI回调
+            onDataUpdate: null,  // 数据更新回调（如刷新历史列表）
+
+            _setState(state, detail) {
+                if (typeof this.onStateChange === 'function') this.onStateChange(state, detail);
+            },
+
+            // 全量双向同步：推送本地全部记录 → 服务器按uid对比时间戳合并 → 拉回需更新的记录
+            async sync() {
+                if (this.syncing) { this.needSync = true; return false; }
+                if (!navigator.onLine) { this._setState('offline'); return false; }
+                if (!currentUser) { this._setState('noauth'); return false; }
+
+                this.syncing = true;
+                this._setState('syncing');
+                try {
+                    const payload = {
+                        workouts: localDB.getWorkouts(),
+                        customExercises: localDB.getCustomExercises(),
+                        commonExercises: localDB.getCommonExercises(),
+                        meta: localDB.getMetaAll()
+                    };
+                    const resp = await apiFetch(`${API_BASE_URL}/sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!resp.ok) throw new Error(`同步失败 (${resp.status})`);
+                    const result = await resp.json();
+
+                    let changed = false;
+                    // 合并 pull 下来的训练记录
+                    if (Array.isArray(result.workouts) && result.workouts.length > 0) {
+                        const local = localDB.getWorkouts();
+                        const map = new Map(local.map(w => [w.uid, w]));
+                        for (const sw of result.workouts) {
+                            if (!sw.uid) continue;
+                            map.set(sw.uid, {
+                                uid: sw.uid,
+                                muscle_group: sw.muscle_group,
+                                session_date: sw.session_date,
+                                exercises_data: sw.exercises_data || [],
+                                updated_at: sw.updated_at,
+                                deleted: sw.deleted ? 1 : 0
+                            });
+                        }
+                        localDB.saveWorkouts(Array.from(map.values()));
+                        changed = true;
+                    }
+                    // 合并自定义动作
+                    if (Array.isArray(result.customExercises) && result.customExercises.length > 0) {
+                        const local = localDB.getCustomExercises();
+                        const byUid = new Map(local.map(x => [x.uid, x]));
+                        const byName = new Map(local.map(x => [`${x.muscle_group}|${x.exercise_name}`, x]));
+                        for (const sc of result.customExercises) {
+                            const rec = {
+                                uid: sc.uid,
+                                muscle_group: sc.muscle_group,
+                                exercise_name: sc.exercise_name,
+                                updated_at: sc.updated_at,
+                                deleted: sc.deleted ? 1 : 0
+                            };
+                            // 同一动作两端uid不同时（同muscle+name），采纳服务器uid，移除本地旧行
+                            const nameKey = `${sc.muscle_group}|${sc.exercise_name}`;
+                            const oldLocal = byName.get(nameKey);
+                            if (oldLocal && oldLocal.uid !== sc.uid) {
+                                byUid.delete(oldLocal.uid);
+                                local.splice(local.indexOf(oldLocal), 1);
+                            }
+                            byUid.set(sc.uid, rec);
+                            byName.set(nameKey, rec);
+                        }
+                        const merged = [];
+                        const seen = new Set();
+                        for (const item of [...local, ...Array.from(byUid.values())]) {
+                            if (seen.has(item.uid)) continue;
+                            seen.add(item.uid);
+                            merged.push(item);
+                        }
+                        localDB.saveCustomExercises(merged);
+                        changed = true;
+                    }
+                    // 合并公用动作
+                    if (Array.isArray(result.commonExercises) && result.commonExercises.length > 0) {
+                        const local = localDB.getCommonExercises();
+                        const map = new Map(local.map(x => [x.exercise_name, x]));
+                        for (const sce of result.commonExercises) {
+                            map.set(sce.exercise_name, {
+                                exercise_name: sce.exercise_name,
+                                updated_at: sce.updated_at,
+                                deleted: sce.deleted ? 1 : 0
+                            });
+                        }
+                        localDB.saveCommonExercises(Array.from(map.values()));
+                        changed = true;
+                    }
+                    // 合并 meta（计划计算器等）
+                    if (result.meta && Object.keys(result.meta).length > 0) {
+                        const all = localDB.getMetaAll();
+                        for (const key of Object.keys(result.meta)) {
+                            const sm = result.meta[key];
+                            const cm = all[key];
+                            if (!cm || (sm.updated_at || '') > (cm.updated_at || '')) {
+                                all[key] = { value: sm.value, updated_at: sm.updated_at };
+                            }
+                        }
+                        localStorage.setItem(LS_KEYS.meta, JSON.stringify(all));
+                        changed = true;
+                    }
+
+                    localStorage.setItem(LS_KEYS.lastSync, result.serverTime || new Date().toISOString());
+                    this._setState('success');
+                    if (changed && typeof this.onDataUpdate === 'function') this.onDataUpdate();
+                    return true;
+                } catch (e) {
+                    console.error('sync error:', e);
+                    this._setState('error', e.message);
+                    return false;
+                } finally {
+                    this.syncing = false;
+                    if (this.needSync) { // 同步期间有新变更，再同步一轮
+                        this.needSync = false;
+                        setTimeout(() => this.sync(), 1000);
+                    }
+                }
+            }
+        };
+
+        // 训练记录本地操作
+        const workoutStore = {
+            add(muscleGroup, exercisesData) {
+                const workouts = localDB.getWorkouts();
+                const rec = {
+                    uid: generateUUID(),
+                    muscle_group: muscleGroup,
+                    session_date: new Date().toISOString().slice(0, 10),
+                    exercises_data: exercisesData,
+                    updated_at: new Date().toISOString(),
+                    deleted: 0
+                };
+                workouts.push(rec);
+                localDB.saveWorkouts(workouts);
+                return rec;
+            },
+            softDelete(uid) {
+                const workouts = localDB.getWorkouts();
+                const rec = workouts.find(w => w.uid === uid);
+                if (rec) {
+                    rec.deleted = 1;
+                    rec.updated_at = new Date().toISOString();
+                    localDB.saveWorkouts(workouts);
+                }
+            },
+            listByMuscle(muscle) {
+                return localDB.getWorkouts()
+                    .filter(w => w.muscle_group === muscle && !w.deleted)
+                    .sort((a, b) => (b.session_date + (b.uid || '')).localeCompare(a.session_date + (a.uid || '')));
+            },
+            lastWorkoutOf(muscle, exerciseName) {
+                const list = this.listByMuscle(muscle);
+                const nameLc = exerciseName.trim().toLowerCase();
+                for (const session of list) {
+                    const found = (session.exercises_data || []).find(ex =>
+                        ex.exercise_name === exerciseName ||
+                        (ex.exercise_name && ex.exercise_name.trim().toLowerCase() === nameLc)
+                    );
+                    if (found && found.sets_data && found.sets_data.length > 0) {
+                        return { sets_data: found.sets_data, session_date: session.session_date };
+                    }
+                }
+                return null;
+            }
+        };
+
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
         let availableExercises = []; // 可用的动作列表
@@ -2099,6 +2336,8 @@
                     <i class="fas fa-calculator mr-2"></i>请输入目标重量查看训练计划
                 </p>
             `;
+            // 恢复上次保存的目标重量（本地+云端同步）
+            restorePlanTargetWeight();
         }
 
         // 训练计划模板 (百分比, 组数, 次数, 是否减载)
@@ -2155,7 +2394,20 @@
                 percent: 1.0
             });
 
+            // 持久化目标重量到本地并通过sync同步（跨设备保留计划计算器参数）
+            localDB.setMeta('plan_target_weight', targetWeight);
+
             renderWorkoutPlan();
+        }
+
+        // 从本地meta恢复目标重量（sync后跨设备一致）
+        function restorePlanTargetWeight() {
+            const saved = localDB.getMeta('plan_target_weight');
+            const input = document.getElementById('target-weight');
+            if (saved && input && !input.value) {
+                input.value = saved;
+                calculateWorkoutPlan();
+            }
         }
 
         function renderWorkoutPlan() {
@@ -2256,15 +2508,14 @@
         async function loadCommonExercises() {
             const container = document.getElementById('common-exercises-container');
             let loader = document.getElementById('common-exercises-loader');
-            
+
             try {
                 if (loader) loader.classList.remove('hidden');
-                
-                const response = await apiFetch(`${API_BASE_URL}/common-exercises`);
-                if (!response.ok) throw new Error('加载公用动作失败');
-                
-                commonExercises = await response.json();
+
+                // 离线优先：从本地数据渲染，后台同步刷新
+                commonExercises = localDB.getCommonExercises().filter(x => !x.deleted).map(x => x.exercise_name);
                 renderCommonExercises();
+                if (navigator.onLine && currentUser && !syncManager.syncing) syncManager.sync();
             } catch (error) {
                 console.error('Error loading common exercises:', error);
                 container.innerHTML = `
@@ -2315,61 +2566,60 @@
             if (!newName || newName.trim() === '' || newName.trim() === oldName) {
                 return;
             }
-            
+
             try {
-                const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ old_name: oldName, new_name: newName.trim() })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '更新失败');
+                // 离线优先：本地改名（删旧建新，因公用动作以名称为主键）+ 同步
+                const trimmed = newName.trim();
+                const list = localDB.getCommonExercises();
+                const old = list.find(x => x.exercise_name === oldName);
+                if (old) {
+                    old.deleted = 1;
+                    old.updated_at = new Date().toISOString();
                 }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showModal('成功', `已更新公用动作: ${newName.trim()}`);
-                    await loadCommonExercises();
+                const exists = list.find(x => x.exercise_name === trimmed);
+                if (exists) {
+                    exists.deleted = 0;
+                    exists.updated_at = new Date().toISOString();
                 } else {
-                    showModal('错误', data.error || '更新失败');
+                    list.push({ exercise_name: trimmed, updated_at: new Date().toISOString(), deleted: 0 });
                 }
+                localDB.saveCommonExercises(list);
+                syncManager.sync();
+                showModal('成功', `已更新公用动作: ${trimmed}`);
+                await loadCommonExercises();
             } catch (error) {
                 console.error('Error editing common exercise:', error);
-                showModal('错误', error.message || '网络错误，请重试');
+                showModal('错误', error.message || '操作失败，请重试');
             }
         }
 
         async function addCommonExercise() {
             const input = document.getElementById('new-common-exercise-input');
             const exerciseName = input.value.trim();
-            
+
             if (!exerciseName) {
                 showModal('提示', '请输入动作名称');
                 return;
             }
-            
+
             try {
-                const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ exercise_name: exerciseName })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    input.value = '';
-                    await loadCommonExercises();
-                    showModal('成功', `已添加公用动作: ${exerciseName}`);
+                // 离线优先：本地添加 + 同步
+                const list = localDB.getCommonExercises();
+                const exists = list.find(x => x.exercise_name === exerciseName);
+                if (exists) {
+                    exists.deleted = 0;
+                    exists.updated_at = new Date().toISOString();
                 } else {
-                    showModal('错误', data.error || '添加失败');
+                    list.push({ exercise_name: exerciseName, updated_at: new Date().toISOString(), deleted: 0 });
                 }
+                localDB.saveCommonExercises(list);
+                syncManager.sync();
+                input.value = '';
+                await loadCommonExercises();
+                showModal('成功', `已添加公用动作: ${exerciseName}`);
             } catch (error) {
                 console.error('Error adding common exercise:', error);
-                showModal('错误', '网络错误，请重试');
+                showModal('错误', error.message || '操作失败，请重试');
             }
         }
 
@@ -2379,23 +2629,20 @@
                 `确定要删除公用动作 "${exerciseName}" 吗？`,
                 async () => {
                     try {
-                        const response = await apiFetch(`${API_BASE_URL}/common-exercises`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ exercise_name: exerciseName })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            await loadCommonExercises();
-                            showModal('成功', `已删除公用动作: ${exerciseName}`);
-                        } else {
-                            showModal('错误', data.error || '删除失败');
+                        // 离线优先：本地软删除 + 同步
+                        const list = localDB.getCommonExercises();
+                        const rec = list.find(x => x.exercise_name === exerciseName);
+                        if (rec) {
+                            rec.deleted = 1;
+                            rec.updated_at = new Date().toISOString();
+                            localDB.saveCommonExercises(list);
                         }
+                        syncManager.sync();
+                        await loadCommonExercises();
+                        showModal('成功', `已删除公用动作: ${exerciseName}`);
                     } catch (error) {
                         console.error('Error deleting common exercise:', error);
-                        showModal('错误', '网络错误，请重试');
+                        showModal('错误', error.message || '操作失败，请重试');
                     }
                 }
             );
@@ -2552,38 +2799,38 @@
 
         // --- 动作管理 (训练页面和动作管理页面共用) ---
         async function loadAvailableExercises() {
+            // 离线优先：本地数据源构建（本地为唯一真相源，syncManager保证两端一致）
             try {
-                const response = await apiFetch(`${API_BASE_URL}/exercises/${currentMuscleGroup}`);
-                if (!response.ok) throw new Error('加载动作列表失败');
-                const data = await response.json();
-                // 后端返回 { custom: [...], common: [...], all: [...], frequency: {...} }
-                customExercises = data.custom || [];
-                commonExercises = data.common || [];
-                availableExercises = data.all || [];
-                exerciseFrequency = data.frequency || {};
-                // 缓存动作列表到localStorage
+                const custom = localDB.getCustomExercises()
+                    .filter(x => x.muscle_group === currentMuscleGroup && !x.deleted)
+                    .map(x => x.exercise_name);
+                const common = localDB.getCommonExercises()
+                    .filter(x => !x.deleted)
+                    .map(x => x.exercise_name);
+                customExercises = custom;
+                commonExercises = common;
+                availableExercises = [...new Set([...custom, ...common])].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+                // 计算训练频率（按动作名统计，离线可用）
+                const frequency = {};
+                localDB.getWorkouts().filter(w => !w.deleted).forEach(session => {
+                    (session.exercises_data || []).forEach(ex => {
+                        if (ex.exercise_name) frequency[ex.exercise_name] = (frequency[ex.exercise_name] || 0) + 1;
+                    });
+                });
+                exerciseFrequency = frequency;
+
+                // 兼容旧缓存机制（防止降级）
                 localStorage.setItem(`exerciseCache_${currentMuscleGroup}`, JSON.stringify({
-                    custom: customExercises,
-                    common: commonExercises,
-                    all: availableExercises,
-                    frequency: exerciseFrequency,
-                    timestamp: Date.now()
+                    custom, common, all: availableExercises, frequency, timestamp: Date.now()
                 }));
-            } catch (error) {
-                console.error(error);
-                // 网络失败时尝试从缓存加载
-                const cached = localStorage.getItem(`exerciseCache_${currentMuscleGroup}`);
-                if (cached) {
-                    try {
-                        const data = JSON.parse(cached);
-                        customExercises = data.custom || [];
-                        commonExercises = data.common || [];
-                        availableExercises = data.all || [];
-                        exerciseFrequency = data.frequency || {};
-                    } catch (e) {
-                        console.error('解析缓存动作列表失败:', e);
-                    }
-                }
+            } catch (e) {
+                console.error('本地动作列表构建失败:', e);
+            }
+
+            // 在线时后台同步一次，确保拿到最新动作（不阻塞UI）
+            if (navigator.onLine && currentUser && !syncManager.syncing) {
+                syncManager.sync();
             }
         }
 
@@ -2639,20 +2886,26 @@
                 if (newExerciseName && newExerciseName.trim() !== '') {
                     try {
                         selectElement.disabled = true; // 禁用选择器，防止重复提交
-                        const response = await apiFetch(`${API_BASE_URL}/exercises`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ muscle_group: currentMuscleGroup, exercise_name: newExerciseName.trim() })
-                        });
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || '添加新动作失败。');
+                        // 离线优先：先写本地（生成uid），再尝试同步
+                        const trimmedName = newExerciseName.trim();
+                        const customs = localDB.getCustomExercises();
+                        const exists = customs.some(x => x.muscle_group === currentMuscleGroup && x.exercise_name === trimmedName && !x.deleted);
+                        if (!exists) {
+                            customs.push({
+                                uid: generateUUID(),
+                                muscle_group: currentMuscleGroup,
+                                exercise_name: trimmedName,
+                                updated_at: new Date().toISOString(),
+                                deleted: 0
+                            });
+                            localDB.saveCustomExercises(customs);
+                            syncManager.sync(); // 后台同步，不阻塞
                         }
                         await loadAvailableExercises(); // 重新加载最新动作列表
                         updateAllExerciseDropdowns(); // 更新所有下拉菜单
-                        selectElement.value = newExerciseName.trim(); // 选中新添加的动作
+                        selectElement.value = trimmedName; // 选中新添加的动作
                         saveSessionToLocalStorage(); // 保存到LocalStorage
-                        showModal('成功', `动作 "${newExerciseName.trim()}" 已添加！`);
+                        showModal('成功', `动作 "${trimmedName}" 已添加！`);
                     } catch (error) {
                         showModal('错误', error.message);
                         selectElement.value = availableExercises[0] || ''; // 失败则恢复默认值
@@ -2664,7 +2917,7 @@
                 }
             }
             saveSessionToLocalStorage(); // 动作选择改变时保存到LocalStorage
-            
+
             // 获取上次训练数据并显示
             if (selectElement.value && selectElement.value !== 'add_new') {
                 fetchAndShowLastWorkout(selectElement);
@@ -2695,23 +2948,22 @@
             // 延迟执行，避免 onclick 和 onchange 重复触发
             fetchTooltipTimer = setTimeout(() => {
                 const exerciseBlock = selectElement.closest('.exercise-block');
-                
-                apiFetch(`${API_BASE_URL}/last-workout/${currentMuscleGroup}/${encodeURIComponent(exerciseName)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.sets_data && data.sets_data.length > 0) {
-                            lastWorkoutData = data;
-                            showLastWorkoutTooltip(exerciseName, data);
-                            autoFillFirstSetWeight(exerciseBlock, data.sets_data);
-                        } else {
-                            hideLastWorkoutTooltip();
-                            lastWorkoutData = null;
-                        }
-                    })
-                    .catch(err => {
-                        console.error('获取上次训练数据失败:', err);
+
+                // 离线可用：直接从本地数据查询上次训练
+                try {
+                    const data = workoutStore.lastWorkoutOf(currentMuscleGroup, exerciseName);
+                    if (data && data.sets_data && data.sets_data.length > 0) {
+                        lastWorkoutData = data;
+                        showLastWorkoutTooltip(exerciseName, data);
+                        autoFillFirstSetWeight(exerciseBlock, data.sets_data);
+                    } else {
                         hideLastWorkoutTooltip();
-                    });
+                        lastWorkoutData = null;
+                    }
+                } catch (err) {
+                    console.error('获取上次训练数据失败:', err);
+                    hideLastWorkoutTooltip();
+                }
             }, 100);
         }
         
@@ -3068,43 +3320,25 @@
                 return;
             }
 
-            // Set up a timeout for the fetch request
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+            // 离线优先：先写入本地（生成uid），再尝试同步到服务器
+            workoutStore.add(currentMuscleGroup, exercisesData);
+            const synced = await syncManager.sync();
 
-            try {
-                const response = await apiFetch(`${API_BASE_URL}/session`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ muscle_group: currentMuscleGroup, exercises_data: exercisesData }),
-                    signal: controller.signal
-                });
-                clearTimeout(id); // Clear the timeout if the request completes in time
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '保存失败');
-                }
-                
+            if (synced) {
                 showModal('成功', '训练已保存！');
-                document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
-                suppressTooltip = true; // 抑制浮窗显示
-                addExerciseToSession(); // 添加一个默认的空动作块
-                suppressTooltip = false; // 恢复浮窗显示
-                localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
-                await loadHistory(); // 重新加载历史记录
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    showModal('保存失败', '请求超时，请检查网络或稍后重试。');
-                } else {
-                    showModal('保存失败', error.message);
-                }
-            } finally {
-                saveButton.disabled = false; // Re-enable button
-                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
-                saveButton.classList.remove('bg-gray-500');
-                saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
+            } else {
+                showModal('已保存到本地', '当前离线或同步失败，数据已保存在本地，联网后会自动同步。');
             }
+            document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
+            suppressTooltip = true; // 抑制浮窗显示
+            addExerciseToSession(); // 添加一个默认的空动作块
+            suppressTooltip = false; // 恢复浮窗显示
+            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
+            loadHistory(); // 重新加载历史记录
+            saveButton.disabled = false;
+            saveButton.textContent = '✓ 完成并保存本次训练';
+            saveButton.classList.remove('bg-gray-500');
+            saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
         }
 
         // --- 历史记录管理 ---
@@ -3149,12 +3383,13 @@
             }
 
             try {
-                const response = await apiFetch(`${API_BASE_URL}/history/${currentMuscleGroup}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '加载失败');
-                }
-                const sessions = await response.json();
+                // 离线优先：直接从本地数据渲染（后台由syncManager保证两端一致）
+                const sessions = workoutStore.listByMuscle(currentMuscleGroup).map(w => ({
+                    session_id: w.uid, // 用uid作为删除标识
+                    uid: w.uid,
+                    session_date: w.session_date,
+                    exercises_data: w.exercises_data || []
+                }));
 
                 if (loader) loader.style.display = 'none'; // 隐藏加载动画
                 else console.warn("History loader element became null while fetching data.");
@@ -3172,7 +3407,7 @@
                         <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
                             <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
                                 <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
-                                <button onclick="deleteSession(${session.session_id})" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
+                                <button onclick="deleteSession('${session.uid}')" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
                             </div>
                             <div class="space-y-3">
                     `;
@@ -3189,6 +3424,11 @@
                     html += `</div></div>`;
                 });
                 historyContainer.insertAdjacentHTML('beforeend', html); // 将新历史记录添加到容器
+
+                // 本地为空且在线 → 触发后台同步拉取服务器历史（首次使用/换设备场景）
+                if (localDB.getWorkouts().length === 0 && navigator.onLine && currentUser) {
+                    syncManager.sync();
+                }
             } catch (error) {
                 if (loader) loader.style.display = 'none'; // 隐藏加载动画
                 else console.warn("History loader element was null during error handling.");
@@ -3196,17 +3436,15 @@
                 historyContainer.insertAdjacentHTML('beforeend', `<p id="load-error-message" class="text-red-400 text-center py-4">加载失败: ${error.message}</p>`);
             }
         }
-        
-        async function deleteSession(sessionId) {
+
+        async function deleteSession(uid) {
             // 使用自定义确认模态框替代原生的 confirm()
             showConfirmModal('确认删除', '确定要删除这次训练记录吗？此操作无法撤销。', async () => {
                 try {
-                    const response = await apiFetch(`${API_BASE_URL}/session/${sessionId}`, { method: 'DELETE' });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || '删除失败');
-                    }
-                    showModal('成功', '训练记录已删除。');
+                    // 本地软删除 + 同步（离线也可删除，联网后自动同步）
+                    workoutStore.softDelete(uid);
+                    const synced = await syncManager.sync();
+                    showModal('成功', synced ? '训练记录已删除。' : '已在本地删除，联网后会自动同步到云端。');
                     await loadHistory(); // 重新加载历史记录以更新界面
                 } catch (error) {
                     showModal('删除失败', error.message);
@@ -3261,16 +3499,13 @@
             }
 
             try {
-                const response = await apiFetch(`${API_BASE_URL}/exercises/${muscle}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '加载动作列表失败');
-                }
-                const data = await response.json();
-                // 后端返回 { custom: [...], common: [...], all: [...] }
-                // 这里只显示自定义动作，公用动作在单独区域管理
-                const customExercises = data.custom || [];
-                const commonExercises = data.common || [];
+                // 离线优先：从本地数据构建（后台由syncManager保证两端一致）
+                const customExercises = localDB.getCustomExercises()
+                    .filter(x => x.muscle_group === muscle && !x.deleted)
+                    .map(x => x.exercise_name);
+                const commonExercises = localDB.getCommonExercises()
+                    .filter(x => !x.deleted)
+                    .map(x => x.exercise_name);
 
                 if (exerciseListLoader) exerciseListLoader.style.display = 'none'; // 隐藏加载动画
                 else console.warn("Management loader element became null while fetching data.");
@@ -3282,7 +3517,7 @@
                 }
 
                 let html = '';
-                
+
                 // 只显示自定义动作（公用动作在单独的公用动作管理区域）
                 if (customExercises.length > 0) {
                     customExercises.forEach(ex => {
@@ -3290,12 +3525,12 @@
                             <div class="exercise-item flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-600 mb-2">
                                 <span class="text-white text-lg flex-grow mr-2">${ex}</span>
                                 <div class="flex gap-2">
-                                    <button onclick="editExercise('${muscle}', '${ex}')" 
+                                    <button onclick="editExercise('${muscle}', '${ex}')"
                                             class="exercise-edit-btn text-blue-400 hover:text-blue-300 p-2 transition-colors"
                                             title="编辑">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="deleteExerciseFromManagement('${muscle}', '${ex}')" 
+                                    <button onclick="deleteExerciseFromManagement('${muscle}', '${ex}')"
                                             class="exercise-delete-btn text-red-400 hover:text-red-300 p-2 transition-colors"
                                             title="删除">
                                         <i class="fas fa-trash"></i>
@@ -3308,8 +3543,11 @@
                     // 如果没有自定义动作但有公用动作，显示提示
                     html += '<p class="text-gray-500 text-center py-4">该肌肉群暂无自定义动作，请添加。公用动作请在下方"公用动作管理"区域查看。</p>';
                 }
-                
+
                 exerciseListContainer.insertAdjacentHTML('beforeend', html);
+
+                // 在线时后台同步刷新
+                if (navigator.onLine && currentUser && !syncManager.syncing) syncManager.sync();
             } catch (error) {
                 if (exerciseListLoader) exerciseListLoader.style.display = 'none';
                 else console.warn("Management loader element was null during error handling.");
@@ -3332,21 +3570,29 @@
             }
 
             try {
-                const response = await apiFetch(`${API_BASE_URL}/exercises`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ muscle_group: muscle, exercise_name: newExerciseName })
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '添加失败');
+                // 离线优先：本地添加 + 后台同步
+                const customs = localDB.getCustomExercises();
+                const exists = customs.find(x => x.muscle_group === muscle && x.exercise_name === newExerciseName);
+                if (exists) {
+                    exists.deleted = 0;
+                    exists.updated_at = new Date().toISOString();
+                } else {
+                    customs.push({
+                        uid: generateUUID(),
+                        muscle_group: muscle,
+                        exercise_name: newExerciseName,
+                        updated_at: new Date().toISOString(),
+                        deleted: 0
+                    });
                 }
+                localDB.saveCustomExercises(customs);
+                syncManager.sync();
                 showModal('成功', `动作 "${newExerciseName}" 已添加。`);
                 newExerciseInput.value = ''; // 清空输入框
                 await loadExercisesForManagement(muscle); // 重新加载列表
                 // 刷新训练页面的可用动作列表
                 currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
-                await loadAvailableExercises(); 
+                await loadAvailableExercises();
                 updateAllExerciseDropdowns();
             } catch (error) {
                 showModal('添加失败', error.message);
@@ -3362,20 +3608,27 @@
             }
 
             try {
-                const response = await apiFetch(`${API_BASE_URL}/exercises`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ muscle_group: muscle, old_exercise_name: oldName, new_exercise_name: newName.trim() })
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '编辑失败');
+                // 离线优先：本地改名 + 后台同步
+                const trimmed = newName.trim();
+                const customs = localDB.getCustomExercises();
+                const rec = customs.find(x => x.muscle_group === muscle && x.exercise_name === oldName);
+                if (rec) {
+                    // 检查新名字是否与其他动作冲突
+                    const conflict = customs.find(x => x.muscle_group === muscle && x.exercise_name === trimmed && !x.deleted);
+                    if (conflict) {
+                        showModal('编辑失败', `已存在同名动作 "${trimmed}"。`);
+                        return;
+                    }
+                    rec.exercise_name = trimmed;
+                    rec.updated_at = new Date().toISOString();
+                    localDB.saveCustomExercises(customs);
+                    syncManager.sync();
                 }
-                showModal('成功', `动作 "${oldName}" 已更新为 "${newName.trim()}"。`);
+                showModal('成功', `动作 "${oldName}" 已更新为 "${trimmed}"。`);
                 await loadExercisesForManagement(muscle); // 重新加载列表
                 // 刷新训练页面的可用动作列表
                 currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
-                await loadAvailableExercises(); 
+                await loadAvailableExercises();
                 updateAllExerciseDropdowns();
             } catch (error) {
                 showModal('编辑失败', error.message);
@@ -3386,25 +3639,91 @@
             // 使用自定义确认模态框替代原生的 confirm()
             showConfirmModal('确认删除', `确定要删除动作 "${exerciseName}" 吗？此操作无法撤销。`, async () => {
                 try {
-                    const response = await apiFetch(`${API_BASE_URL}/exercises`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ muscle_group: muscle, exercise_name: exerciseName })
-                    });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || '删除失败');
+                    // 离线优先：本地软删除 + 后台同步
+                    const customs = localDB.getCustomExercises();
+                    const rec = customs.find(x => x.muscle_group === muscle && x.exercise_name === exerciseName);
+                    if (rec) {
+                        rec.deleted = 1;
+                        rec.updated_at = new Date().toISOString();
+                        localDB.saveCustomExercises(customs);
                     }
+                    syncManager.sync();
                     showModal('成功', `动作 "${exerciseName}" 已删除。`);
                     await loadExercisesForManagement(muscle); // 重新加载列表
                     // 刷新训练页面的可用动作列表
                     currentMuscleGroup = muscle; // 临时设置，确保loadAvailableExercises加载正确
-                    await loadAvailableExercises(); 
+                    await loadAvailableExercises();
                     updateAllExerciseDropdowns();
                 } catch (error) {
                     showModal('删除失败', error.message);
                 }
             });
+        }
+
+        // --- 手动同步与状态UI ---
+        function manualSync() {
+            if (!currentUser) {
+                showModal('提示', '请先登录后再同步。');
+                return;
+            }
+            if (!navigator.onLine) {
+                showModal('提示', '当前离线，请联网后再同步。数据已保存在本地。');
+                return;
+            }
+            syncManager.sync();
+        }
+
+        function updateSyncButtonUI(state) {
+            const icon = document.getElementById('sync-icon');
+            const text = document.getElementById('sync-status-text');
+            const btn = document.getElementById('sync-button');
+            if (!icon || !text || !btn) return;
+
+            const lastSync = localStorage.getItem(LS_KEYS.lastSync);
+            let timeText = '';
+            if (lastSync) {
+                const d = new Date(lastSync);
+                timeText = ` · ${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+
+            icon.classList.remove('fa-spin');
+            switch (state) {
+                case 'syncing':
+                    icon.className = 'fas fa-sync-alt fa-spin text-xs text-blue-400';
+                    text.textContent = '同步中...';
+                    text.className = 'text-blue-400';
+                    break;
+                case 'success':
+                    icon.className = 'fas fa-check-circle text-xs text-green-400';
+                    text.textContent = `已同步${timeText}`;
+                    text.className = 'text-green-400';
+                    // 3秒后恢复常态
+                    setTimeout(() => {
+                        icon.className = 'fas fa-sync-alt text-xs';
+                        text.textContent = `点击同步${timeText}`;
+                        text.className = '';
+                    }, 3000);
+                    break;
+                case 'offline':
+                    icon.className = 'fas fa-wifi text-xs text-gray-500';
+                    text.textContent = `离线模式${timeText}`;
+                    text.className = 'text-gray-500';
+                    break;
+                case 'noauth':
+                    icon.className = 'fas fa-cloud text-xs text-gray-500';
+                    text.textContent = '登录后可同步';
+                    text.className = 'text-gray-500';
+                    break;
+                case 'error':
+                    icon.className = 'fas fa-exclamation-circle text-xs text-red-400';
+                    text.textContent = '同步失败，点击重试';
+                    text.className = 'text-red-400';
+                    break;
+                default:
+                    icon.className = 'fas fa-sync-alt text-xs';
+                    text.textContent = `点击同步${timeText}`;
+                    text.className = '';
+            }
         }
 
         // --- 页面初始化 ---
@@ -3413,6 +3732,45 @@
             await checkAuthStatus();
             if (currentUser) {
                 showHomePage();
+            }
+
+            // 同步状态UI绑定 + 初始状态
+            syncManager.onStateChange = updateSyncButtonUI;
+            updateSyncButtonUI(navigator.onLine ? (currentUser ? 'idle' : 'noauth') : 'offline');
+
+            // 数据更新回调：同步拉到新数据后刷新当前页面
+            syncManager.onDataUpdate = () => {
+                // 刷新训练页历史（若正在显示）
+                if (currentMuscleGroup && document.getElementById('training-page').classList.contains('active')) {
+                    loadHistory();
+                    loadAvailableExercises().then(updateAllExerciseDropdowns);
+                }
+                // 刷新动作管理页
+                if (document.getElementById('exercise-management-page')?.classList.contains('active')) {
+                    loadExercisesForManagement(currentManageMuscleGroup);
+                    loadCommonExercises();
+                }
+                // 恢复计划计算器目标重量（若为空）
+                restorePlanTargetWeight();
+            };
+
+            // 启动时后台自动同步（不阻塞UI）
+            if (currentUser && navigator.onLine) {
+                setTimeout(() => syncManager.sync(), 500);
+            }
+
+            // 网络恢复时自动同步
+            window.addEventListener('online', () => {
+                updateSyncButtonUI(currentUser ? 'idle' : 'noauth');
+                if (currentUser) syncManager.sync();
+            });
+            window.addEventListener('offline', () => updateSyncButtonUI('offline'));
+
+            // 注册 Service Worker（PWA离线支持）
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.error('SW registration failed:', err));
             }
         });
     </script>
