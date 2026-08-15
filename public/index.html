@@ -1977,7 +1977,15 @@
 
         // --- API Fetch Wrapper with 401 handling ---
         async function apiFetch(url, options = {}) {
-            const response = await fetch(url, { ...options, credentials: 'include' });
+            // 8秒超时：不开VPN时API域名被墙，fetch会挂起几十秒
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000);
+            let response;
+            try {
+                response = await fetch(url, { ...options, credentials: 'include', signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+            }
             if (response.status === 401) {
                 currentUser = null;
                 showLoginPage();
@@ -1988,16 +1996,26 @@
 
         // --- Auth Management ---
         async function checkAuthStatus() {
+            // 带超时：不开VPN时pages.dev被墙，fetch会挂起几十秒导致页面长时间空白
             try {
-                const response = await fetch(`${API_BASE_URL}/auth/me`, { credentials: 'include' });
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 3000);
+                const response = await fetch(`${API_BASE_URL}/auth/me`, { credentials: 'include', signal: controller.signal });
+                clearTimeout(timer);
                 if (response.ok) {
                     const data = await response.json();
                     currentUser = data.user;
+                    localStorage.setItem('auth_remember', '1'); // 标记曾登录，供离线模式使用
                 } else {
                     currentUser = null;
                 }
             } catch (e) {
-                currentUser = null;
+                // 网络不通：离线模式。曾登录过则直接进入主页使用本地数据
+                if (localStorage.getItem('auth_remember') === '1') {
+                    currentUser = { offline: true, username: '离线', avatar_url: null };
+                } else {
+                    currentUser = null;
+                }
             }
             if (currentUser) {
                 updateUserArea();
@@ -2015,6 +2033,7 @@
                 await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
             } catch (e) {}
             currentUser = null;
+            localStorage.removeItem('auth_remember'); // 清除离线登录标记
             showLoginPage();
         }
 
@@ -2037,9 +2056,12 @@
             const userArea = document.getElementById('user-area');
             if (!userArea) return;
             if (currentUser) {
+                const avatarHtml = currentUser.avatar_url
+                    ? `<img src="${currentUser.avatar_url}" alt="${currentUser.username}" class="w-7 h-7 rounded-full border border-gray-500">`
+                    : `<div class="w-7 h-7 rounded-full border border-gray-500 bg-gray-600 flex items-center justify-center text-xs">👤</div>`;
                 userArea.innerHTML = `
-                    <img src="${currentUser.avatar_url}" alt="${currentUser.username}" class="w-7 h-7 rounded-full border border-gray-500">
-                    <span class="text-sm text-gray-300 hidden sm:inline">${currentUser.username}</span>
+                    ${avatarHtml}
+                    <span class="text-sm text-gray-300 hidden sm:inline">${currentUser.offline ? '离线模式' : currentUser.username}</span>
                     <button onclick="logout()" class="text-xs text-gray-400 hover:text-red-400 transition-colors" title="登出">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>

@@ -1,11 +1,12 @@
 // Service Worker: 健身追踪器 PWA 离线支持
-const CACHE_NAME = 'fitness-tracker-v1';
+const CACHE_NAME = 'fitness-tracker-v2';
 
 // 预缓存的应用外壳资源
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/sw.js',
   '/icon.svg',
   '/icon-maskable.svg',
 ];
@@ -17,18 +18,32 @@ const CDN_URLS = [
   'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap',
 ];
 
+// 带超时的fetch（解决被墙时fetch长时间挂起的问题）
+function fetchWithTimeout(request, timeoutMs) {
+  return Promise.race([
+    fetch(request),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('sw-timeout')), timeoutMs)
+    )
+  ]);
+}
+
 // 安装：预缓存所有静态资源
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        // CDN资源单独处理，失败不阻塞安装
-        CDN_URLS.forEach(url => {
-          fetch(url, { mode: 'no-cors' })
-            .then(resp => cache.put(url, resp))
-            .catch(() => {});
-        });
-        return cache.addAll(PRECACHE_URLS);
+      .then(async (cache) => {
+        // 预缓存应用外壳（失败会导致install失败重试，保证离线可用性）
+        await cache.addAll(PRECACHE_URLS);
+        // CDN资源尽力缓存，失败不阻塞
+        await Promise.allSettled(
+          CDN_URLS.map(async (url) => {
+            try {
+              const resp = await fetchWithTimeout(url, 15000);
+              if (resp) await cache.put(url, resp);
+            } catch (e) { /* CDN缓存失败忽略 */ }
+          })
+        );
       })
       .then(() => self.skipWaiting())
   );
@@ -46,35 +61,41 @@ self.addEventListener('activate', (event) => {
 });
 
 // 请求拦截策略：
-// 1. 导航请求（页面）→ 网络优先，失败回退缓存（离线可用核心）
-// 2. API请求 → 网络优先，失败返回离线JSON标记（应用层数据走localStorage，不依赖SW缓存）
-// 3. 静态资源/CDN → 缓存优先，后台更新
+// 1. 导航请求（页面）→ 缓存优先（保证离线秒开），后台更新
+// 2. API请求 → 网络优先 + 8秒超时，超时/失败返回离线JSON（数据走localStorage）
+// 3. 其他静态资源/CDN → 缓存优先 + 后台更新
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API请求不缓存（数据同步由应用层管理）
+  // API请求不缓存，但加超时防止挂起
   if (url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: 'offline', offline: true }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
+      fetchWithTimeout(event.request, 8000)
+        .catch(() => {
+          return new Response(JSON.stringify({ error: 'offline', offline: true }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
     );
     return;
   }
 
-  // 页面导航：网络优先，离线回退
+  // 页面导航：缓存优先（离线可秒开），后台静默更新
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then((resp) => {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
-          return resp;
-        })
-        .catch(() => caches.match('/index.html'))
+      caches.match(event.request).then((cached) => {
+        const fetchPromise = fetchWithTimeout(event.request, 10000)
+          .then((resp) => {
+            if (resp && resp.status === 200) {
+              const clone = resp.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+            }
+            return resp;
+          })
+          .catch(() => cached || caches.match('/index.html'));
+        return cached || fetchPromise;
+      })
     );
     return;
   }
@@ -96,7 +117,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// 接收主线程消息：手动触发缓存更新
+// 接收主线程消息
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();
