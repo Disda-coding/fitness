@@ -1473,6 +1473,11 @@
                     <i class="fab fa-github"></i>
                     <span>使用 GitHub 登录</span>
                 </button>
+                <button onclick="enterOfflineMode()" style="background:transparent;border:1px solid rgba(107,114,128,.5);color:#9ca3af;padding:10px 0;width:100%;border-radius:10px;font-size:14px;cursor:pointer;margin-top:10px;transition:all .2s;"
+                        onmouseover="this.style.borderColor='rgba(156,163,175,.8)';this.style.color='#d1d5db'"
+                        onmouseout="this.style.borderColor='rgba(107,114,128,.5)';this.style.color='#9ca3af'">
+                    跳过登录，离线使用
+                </button>
                 <div class="login-features">
                     <div class="login-feature">
                         <span class="feature-icon">📊</span>
@@ -1805,7 +1810,7 @@
                 if (this.syncing) { this.needSync = true; return false; }
                 if (!navigator.onLine) { this._setState('offline'); return false; }
                 if (!currentUser) { this._setState('noauth'); return false; }
-
+                // 离线/游客模式但有网络：仍尝试同步（cookie有效则成功，401则提示需登录）
                 this.syncing = true;
                 this._setState('syncing');
                 try {
@@ -1820,6 +1825,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    if (resp.status === 401) { this._setState('noauth'); return false; }
                     if (!resp.ok) throw new Error(`同步失败 (${resp.status})`);
                     const result = await resp.json();
 
@@ -1987,8 +1993,12 @@
                 clearTimeout(timer);
             }
             if (response.status === 401) {
-                currentUser = null;
-                showLoginPage();
+                // token过期/未登录：转离线模式（本地数据继续可用），不强制踢到登录页
+                if (currentUser && !currentUser.offline) {
+                    currentUser = { offline: true, username: '未登录', avatar_url: null };
+                    updateUserArea();
+                    updateSyncButtonUI('noauth');
+                }
                 throw new Error('Authentication required');
             }
             return response;
@@ -1996,7 +2006,8 @@
 
         // --- Auth Management ---
         async function checkAuthStatus() {
-            // 带超时：不开VPN时pages.dev被墙，fetch会挂起几十秒导致页面长时间空白
+            // 本地功能免登录：登录仅用于云同步。
+            // 在线+已登录 → 完整模式；未登录/token过期/离线 → 离线模式（本地数据照常使用）
             try {
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), 3000);
@@ -2006,21 +2017,13 @@
                     const data = await response.json();
                     currentUser = data.user;
                     localStorage.setItem('auth_remember', '1'); // 标记曾登录，供离线模式使用
-                } else {
-                    currentUser = null;
+                    return;
                 }
+                // token过期/未登录（在线）：转离线模式，不拦截本地使用
+                currentUser = { offline: true, username: '未登录', avatar_url: null };
             } catch (e) {
-                // 网络不通：离线模式。曾登录过则直接进入主页使用本地数据
-                if (localStorage.getItem('auth_remember') === '1') {
-                    currentUser = { offline: true, username: '离线', avatar_url: null };
-                } else {
-                    currentUser = null;
-                }
-            }
-            if (currentUser) {
-                updateUserArea();
-            } else {
-                showLoginPage();
+                // 网络不通：离线模式，直接进主页使用本地数据
+                currentUser = { offline: true, username: '离线模式', avatar_url: null };
             }
         }
 
@@ -2052,6 +2055,14 @@
             showPage('login-page');
         }
 
+        // 跳过登录直接离线使用（本地功能免登录）
+        function enterOfflineMode() {
+            currentUser = { offline: true, username: '离线模式', avatar_url: null };
+            updateUserArea();
+            showHomePage();
+            updateSyncButtonUI(navigator.onLine ? 'noauth' : 'offline');
+        }
+
         function updateUserArea() {
             const userArea = document.getElementById('user-area');
             if (!userArea) return;
@@ -2061,10 +2072,12 @@
                     : `<div class="w-7 h-7 rounded-full border border-gray-500 bg-gray-600 flex items-center justify-center text-xs">👤</div>`;
                 userArea.innerHTML = `
                     ${avatarHtml}
-                    <span class="text-sm text-gray-300 hidden sm:inline">${currentUser.offline ? '离线模式' : currentUser.username}</span>
-                    <button onclick="logout()" class="text-xs text-gray-400 hover:text-red-400 transition-colors" title="登出">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
+                    <span class="text-sm text-gray-300 hidden sm:inline">${currentUser.offline ? (currentUser.username || '离线模式') : currentUser.username}</span>
+                    ${currentUser.offline
+                        ? `<button onclick="showLoginPage()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded border border-blue-500/40" title="登录后可云同步">登录</button>`
+                        : `<button onclick="logout()" class="text-xs text-gray-400 hover:text-red-400 transition-colors" title="登出">
+                            <i class="fas fa-sign-out-alt"></i>
+                           </button>`}
                 `;
             } else {
                 userArea.innerHTML = `
@@ -3696,6 +3709,7 @@
                 showModal('提示', '当前离线，请联网后再同步。数据已保存在本地。');
                 return;
             }
+            // 离线/游客模式：有网时也尝试（cookie有效即可同步）
             syncManager.sync();
         }
 
@@ -3760,17 +3774,17 @@
             // 先绑定同步UI回调（首次同步也能显示状态）
             syncManager.onStateChange = updateSyncButtonUI;
 
-            // 首次使用/换设备：本地无训练数据且在线 → 等待全量拉取完成再进主页（保证历史完整）
+            // 首次使用/换设备：本地无训练数据且在线已登录 → 等待全量拉取完成再进主页（保证历史完整）
             if (currentUser && !currentUser.offline && navigator.onLine && localDB.getWorkouts().length === 0) {
                 await syncManager.sync();
             }
 
-            if (currentUser) {
-                showHomePage();
-            }
+            // 本地功能免登录：任何情况都直接进主页
+            updateUserArea();
+            showHomePage();
 
             // 初始状态
-            updateSyncButtonUI(navigator.onLine ? (currentUser ? 'idle' : 'noauth') : 'offline');
+            updateSyncButtonUI(!navigator.onLine ? 'offline' : (currentUser && !currentUser.offline ? 'idle' : 'noauth'));
 
             // 数据更新回调：同步拉到新数据后刷新当前页面
             syncManager.onDataUpdate = () => {
