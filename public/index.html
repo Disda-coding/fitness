@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -2956,6 +2956,8 @@
             // 获取上次训练数据并显示
             if (selectElement.value && selectElement.value !== 'add_new') {
                 fetchAndShowLastWorkout(selectElement);
+                // 添加动作/手动切换动作时：自动填入上次重量到第一组（已有输入则跳过）
+                autoFillFirstWeightFromLast(selectElement);
             } else {
                 hideLastWorkoutTooltip();
             }
@@ -2967,30 +2969,55 @@
         let fetchTooltipTimer = null; // 防抖定时器
         let suppressTooltip = false; // 用于控制是否显示浮窗的标志
         
+        // 查询某个动作的上次训练记录（离线优先：本地空时回退到云端 API）
+        // 供"查看历史浮窗"和"添加动作时自动填入重量"复用
+        async function getLastWorkoutData(exerciseName) {
+            if (!exerciseName || exerciseName === 'add_new') return null;
+            // 1. 离线优先：从本设备 localStorage 查询
+            let data = workoutStore.lastWorkoutOf(currentMuscleGroup, exerciseName);
+            // 2. 本地空时回退到云端 API 查询（需在线且已登录）
+            //    场景：换设备/首次使用，云端有历史但本设备没有
+            if ((!data || !data.sets_data || data.sets_data.length === 0)
+                && navigator.onLine && currentUser && !currentUser.offline) {
+                try {
+                    const resp = await apiFetch(
+                        `${API_BASE_URL}/last-workout/${encodeURIComponent(currentMuscleGroup)}/${encodeURIComponent(exerciseName)}`
+                    );
+                    if (resp.ok) {
+                        const remote = await resp.json();
+                        if (remote && remote.sets_data && remote.sets_data.length > 0) {
+                            data = { sets_data: remote.sets_data, session_date: remote.session_date };
+                        }
+                    }
+                } catch (e) {
+                    // 静默失败：本地无数据且 API 也失败，按"无上次记录"处理
+                    console.warn('云端上次记录查询失败:', e.message);
+                }
+            }
+            return data;
+        }
+
         function fetchAndShowLastWorkout(selectElement) {
             const exerciseName = selectElement.value;
-            
+
             // 如果设置了抑制标志，不显示浮窗
             if (suppressTooltip) {
                 return;
             }
-            
+
             // 防抖：清除之前的定时器
             if (fetchTooltipTimer) {
                 clearTimeout(fetchTooltipTimer);
             }
-            
-            // 延迟执行，避免 onclick 和 onchange 重复触发
-            fetchTooltipTimer = setTimeout(() => {
-                const exerciseBlock = selectElement.closest('.exercise-block');
 
-                // 离线可用：优先从本地数据查询上次训练
+            // 延迟执行，避免 onclick 和 onchange 重复触发
+            fetchTooltipTimer = setTimeout(async () => {
+                // 仅查看上次历史，不修改/覆盖任何输入框的值
                 try {
-                    const data = workoutStore.lastWorkoutOf(currentMuscleGroup, exerciseName);
+                    const data = await getLastWorkoutData(exerciseName);
                     if (data && data.sets_data && data.sets_data.length > 0) {
                         lastWorkoutData = data;
                         showLastWorkoutTooltip(exerciseName, data);
-                        autoFillFirstSetWeight(exerciseBlock, data.sets_data);
                     } else {
                         hideLastWorkoutTooltip();
                         lastWorkoutData = null;
@@ -3000,6 +3027,41 @@
                     hideLastWorkoutTooltip();
                 }
             }, 100);
+        }
+
+        // 添加动作/切换动作时自动填入上次重量到第一组
+        // 安全条件：当前动作块若已有任意重量记录则跳过（防止误切换覆盖用户已输入数据）
+        async function autoFillFirstWeightFromLast(selectElement) {
+            const exerciseName = selectElement.value;
+            if (!exerciseName || exerciseName === 'add_new') return;
+
+            const exerciseBlock = selectElement.closest('.exercise-block');
+            if (!exerciseBlock) return;
+
+            const setItems = exerciseBlock.querySelectorAll('.sets-container .set-item');
+            if (setItems.length === 0) return;
+
+            // 已有任意一组的重量被填入 -> 认为用户已在该动作块输入数据,不覆盖
+            const hasExistingInput = Array.from(setItems).some(item => {
+                const w = item.querySelector('.set-weight');
+                return w && w.value && w.value.trim() !== '';
+            });
+            if (hasExistingInput) return;
+
+            try {
+                const data = await getLastWorkoutData(exerciseName);
+                if (!data || !data.sets_data || data.sets_data.length === 0) return;
+                const lastWeight = data.sets_data[0].weight;
+                if (lastWeight === undefined || lastWeight === null || lastWeight === '') return;
+
+                const firstWeightInput = setItems[0].querySelector('.set-weight');
+                if (firstWeightInput && !firstWeightInput.value) {
+                    firstWeightInput.value = lastWeight;
+                    saveSessionToLocalStorage();
+                }
+            } catch (err) {
+                console.error('自动填入上次重量失败:', err);
+            }
         }
         
         function showLastWorkoutTooltip(exerciseName, data) {
@@ -3046,72 +3108,6 @@
                 } else {
                     tooltip.classList.add('fading');
                     setTimeout(() => tooltip.remove(), 300);
-                }
-            }
-        }
-        
-        function autoFillFirstSetWeight(exerciseBlock, setsData) {
-            if (!setsData || setsData.length === 0) return;
-            
-            const setsContainer = exerciseBlock.querySelector('.sets-container');
-            const setItems = setsContainer.querySelectorAll('.set-item');
-            
-            // 更新所有已存在组的重量和次数参考数据
-            setsData.forEach((setData, index) => {
-                if (setItems[index]) {
-                    const weightInput = setItems[index].querySelector('.set-weight');
-                    const repsInput = setItems[index].querySelector('.set-reps');
-                    
-                    if (weightInput) {
-                        // 存储上次数据作为参考
-                        weightInput.dataset.suggestedWeight = setData.weight;
-                        weightInput.dataset.suggestedReps = setData.reps;
-                        
-                        // 如果是第一组，自动填入上次重量
-                        if (index === 0) {
-                            weightInput.value = setData.weight || '';
-                            weightInput.dataset.lastWeight = setData.weight;
-                            
-                            // 添加焦点事件：用户点击重量输入框时清空
-                            weightInput.addEventListener('focus', function onFirstFocus() {
-                                if (this.dataset.lastWeight) {
-                                    this.value = '';
-                                    delete this.dataset.lastWeight;
-                                }
-                                this.removeEventListener('focus', onFirstFocus);
-                            }, { once: true });
-                        }
-                    }
-                    
-                    if (repsInput) {
-                        repsInput.dataset.suggestedWeight = setData.weight;
-                        repsInput.dataset.suggestedReps = setData.reps;
-                        
-                        // 用户输入次数时，如果重量为空，自动填入上次重量
-                        repsInput.addEventListener('input', function onRepsInput() {
-                            if (!weightInput.value && this.dataset.suggestedWeight) {
-                                weightInput.value = this.dataset.suggestedWeight;
-                            }
-                        }, { once: true });
-                    }
-                }
-            });
-            
-            // 先清除该动作块中所有已存在的超级组提示标签，避免切换动作后残留
-            setsContainer.querySelectorAll('.superset-hint').forEach(el => el.remove());
-
-            // 如果上次训练有超级组，在第一组输入框旁显示提示
-            const hasSuperSet = setsData.some(s => (typeof s.weight === 'string' && s.weight.includes('-')) || (typeof s.reps === 'string' && s.reps.includes('-')));
-            if (hasSuperSet) {
-                const firstSetItem = setItems[0];
-                if (firstSetItem) {
-                    const hint = document.createElement('span');
-                    hint.className = 'superset-hint text-xs text-yellow-400 ml-1';
-                    hint.textContent = '超级组';
-                    const weightInput = firstSetItem.querySelector('.set-weight');
-                    if (weightInput) {
-                        weightInput.insertAdjacentElement('afterend', hint);
-                    }
                 }
             }
         }
@@ -3180,12 +3176,14 @@
                     return freqB - freqA;
                 });
                 select.value = sortedByFrequency[0];
-                // 显示上次训练浮窗
+                // 显示上次训练浮窗 + 自动填入上次重量到第一组
                 fetchAndShowLastWorkout(select);
+                autoFillFirstWeightFromLast(select);
             } else if (availableExercises.length > 0) {
                 // 如果所有动作都已选择，则选择第一个
                 select.value = availableExercises[0];
                 fetchAndShowLastWorkout(select);
+                autoFillFirstWeightFromLast(select);
             }
         }
 
