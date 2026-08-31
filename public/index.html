@@ -3355,6 +3355,8 @@
 
             // 离线优先：先写入本地（生成uid），再尝试同步到服务器
             workoutStore.add(currentMuscleGroup, exercisesData);
+            // 立即清除本地草稿（必须在同步等待之前，否则同步期间关闭/刷新页面会导致草稿残留、下次恢复后再次保存产生重复记录）
+            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
             const synced = await syncManager.sync();
 
             if (synced) {
@@ -3366,7 +3368,7 @@
             suppressTooltip = true; // 抑制浮窗显示
             addExerciseToSession(); // 添加一个默认的空动作块
             suppressTooltip = false; // 恢复浮窗显示
-            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // **重要：成功保存后清除LocalStorage数据**
+            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // 草稿已在保存前清除，这里兜底
             loadHistory(); // 重新加载历史记录
             saveButton.disabled = false;
             saveButton.textContent = '✓ 完成并保存本次训练';
