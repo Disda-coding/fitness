@@ -2956,7 +2956,7 @@
             // 获取上次训练数据并显示
             if (selectElement.value && selectElement.value !== 'add_new') {
                 fetchAndShowLastWorkout(selectElement);
-                // 添加动作/手动切换动作时：自动填入上次重量到第一组（已有输入则跳过）
+                // 添加动作/手动切换动作时：自动填入上次重量到第一组（仅第一组且次数为空时，详见函数内规则）
                 autoFillFirstWeightFromLast(selectElement);
             } else {
                 hideLastWorkoutTooltip();
@@ -3030,7 +3030,8 @@
         }
 
         // 添加动作/切换动作时自动填入上次重量到第一组
-        // 安全条件：当前动作块若已有任意重量记录则跳过（防止误切换覆盖用户已输入数据）
+        // 规则：该块只有第一组、且第一组次数为空时，用上次重量填入/覆盖（切换动作时覆盖旧重量）；
+        //      已加多组（视为误触）或第一组已填次数（已开始记录）则不动
         async function autoFillFirstWeightFromLast(selectElement) {
             const exerciseName = selectElement.value;
             if (!exerciseName || exerciseName === 'add_new') return;
@@ -3041,12 +3042,12 @@
             const setItems = exerciseBlock.querySelectorAll('.sets-container .set-item');
             if (setItems.length === 0) return;
 
-            // 已有任意一组的重量被填入 -> 认为用户已在该动作块输入数据,不覆盖
-            const hasExistingInput = Array.from(setItems).some(item => {
-                const w = item.querySelector('.set-weight');
-                return w && w.value && w.value.trim() !== '';
-            });
-            if (hasExistingInput) return;
+            // 已加多组：用户已在整理训练或属于误触切换，不覆盖任何数据
+            if (setItems.length > 1) return;
+
+            // 第一组已填次数：视为已开始记录，不覆盖
+            const firstReps = setItems[0].querySelector('.set-reps');
+            if (firstReps && firstReps.value && firstReps.value.trim() !== '') return;
 
             try {
                 const data = await getLastWorkoutData(exerciseName);
@@ -3055,7 +3056,7 @@
                 if (lastWeight === undefined || lastWeight === null || lastWeight === '') return;
 
                 const firstWeightInput = setItems[0].querySelector('.set-weight');
-                if (firstWeightInput && !firstWeightInput.value) {
+                if (firstWeightInput) {
                     firstWeightInput.value = lastWeight;
                     saveSessionToLocalStorage();
                 }
