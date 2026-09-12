@@ -1454,6 +1454,56 @@
         .superset-hint {
             white-space: nowrap;
         }
+
+        /* ===== 微动效 ===== */
+        /* 页面切换：淡入上移 */
+        .page.active {
+            animation: pageIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 按钮按压反馈：轻微缩放 */
+        .btn,
+        button {
+            transition: transform 0.12s ease, opacity 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active,
+        button:active {
+            transform: scale(0.96);
+        }
+        .btn:disabled,
+        button:disabled {
+            transform: none;
+        }
+
+        /* 动作块 / 组条目入场 */
+        .exercise-block {
+            animation: blockIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .set-item {
+            animation: blockIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes blockIn {
+            from { opacity: 0; transform: translateY(8px) scale(0.99); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* 尊重系统"减少动态效果"设置 */
+        @media (prefers-reduced-motion: reduce) {
+            .page.active,
+            .exercise-block,
+            .set-item {
+                animation: none;
+            }
+            .btn:active,
+            button:active {
+                transform: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2317,8 +2367,8 @@
 
         function showHomePage() {
             showPage('home-page'); // 显示主页
-            // 当返回主页时，清除当前训练的LocalStorage数据，因为它不再是"未完成"的状态
-            localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
+            // 注意：不再清除 currentSessionData_ 草稿——中途切到计划/其他页面再回来要能继续记录；
+            // 草稿只在保存成功（saveSession）后清除
             // 清空动作管理页面的选择
             document.getElementById('manage-muscle-select').value = '';
         }
@@ -2758,7 +2808,7 @@
                                 <div class="flex items-center gap-2">
                                     <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                                     <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select);" class="text-blue-400 hover:text-blue-300 p-1" title="查看上次训练"><i class="fas fa-history"></i></button>
-                                    <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
+                                    <button onclick="removeExerciseBlock(this)" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="sets-container mt-3 space-y-2"></div>
                                 <div class="flex gap-2 mt-2">
@@ -3113,6 +3163,15 @@
             }
         }
         
+        // 删除动作块（同步草稿；全部删光则清除草稿，表示放弃本次未完成训练）
+        function removeExerciseBlock(btn) {
+            btn.closest('.exercise-block').remove();
+            saveSessionToLocalStorage();
+            if (!document.querySelector('#current-session-container .exercise-block')) {
+                localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
+            }
+        }
+
         // --- 当前训练会话管理 ---
         function addExerciseToSession() {
             const exerciseId = `ex-${Date.now()}`; // 为新动作生成唯一ID
@@ -3142,10 +3201,12 @@
         // 为新添加的动作选择频率最高但未选择过的动作
         function updateExerciseDropdownForNewExercise(select) {
             let optionsHtml = '';
-            
+            // 占位选项：无推荐动作时保持未选择状态（避免自动选中公用动作）
+            optionsHtml += '<option value="" disabled>-- 选择动作 --</option>';
+
             // 获取已选择的动作列表
             const selectedExercises = Array.from(document.querySelectorAll('.exercise-select')).map(s => s.value).filter(v => v && v !== 'add_new');
-            
+
             // 自定义动作组
             if (customExercises.length > 0) {
                 optionsHtml += '<optgroup label="自定义动作">';
@@ -3154,7 +3215,7 @@
                 });
                 optionsHtml += '</optgroup>';
             }
-            
+
             // 公用动作组
             if (commonExercises.length > 0) {
                 optionsHtml += '<optgroup label="公用动作">';
@@ -3163,15 +3224,15 @@
                 });
                 optionsHtml += '</optgroup>';
             }
-            
+
             optionsHtml += '<option value="add_new" class="text-blue-400 font-bold">-- 添加新动作 --</option>';
             select.innerHTML = optionsHtml;
-            
-            // 选择频率最高但未选择过的动作
-            const unselectedExercises = availableExercises.filter(ex => !selectedExercises.includes(ex));
-            if (unselectedExercises.length > 0) {
+
+            // 高频推荐：只从「自定义动作」中选（公用动作不参与推荐，仅供手动选择）
+            const recommendable = customExercises.filter(ex => !selectedExercises.includes(ex));
+            if (recommendable.length > 0) {
                 // 按频率排序（频率高的在前）
-                const sortedByFrequency = unselectedExercises.sort((a, b) => {
+                const sortedByFrequency = recommendable.sort((a, b) => {
                     const freqA = exerciseFrequency[a] || 0;
                     const freqB = exerciseFrequency[b] || 0;
                     return freqB - freqA;
@@ -3180,12 +3241,8 @@
                 // 显示上次训练浮窗 + 自动填入上次重量到第一组
                 fetchAndShowLastWorkout(select);
                 autoFillFirstWeightFromLast(select);
-            } else if (availableExercises.length > 0) {
-                // 如果所有动作都已选择，则选择第一个
-                select.value = availableExercises[0];
-                fetchAndShowLastWorkout(select);
-                autoFillFirstWeightFromLast(select);
             }
+            // 没有可推荐的自定义动作时保持占位状态，由用户手动选择
         }
 
         function addSetToExercise(exerciseId) {
