@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>健身追踪器</title>
     <link rel="manifest" href="/manifest.json">
-                <meta name="theme-color" content="#FF6B35">
+                <meta name="theme-color" content="#3a86ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
@@ -151,25 +151,25 @@
         }
         
         :root {
-            --primary: #FF6B35;
-            --secondary: #FF3E6C;
-            --accent: #8B5CF6;
-            --dark: #0A0E1A;
-            --darker: #050810;
-            --card-bg: #141B30;
-            --grad-primary: linear-gradient(135deg, #FF6B35, #FF3E6C);
+            --primary: #3a86ff;
+            --secondary: #4cc9f0;
+            --accent: #8338ec;
+            --dark: #111827;
+            --darker: #0b1120;
+            --card-bg: #1e293b;
+            --grad-primary: linear-gradient(135deg, #3a86ff, #8338ec);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         /* Light mode variables - iOS 26 Liquid Glass style */
         [data-theme="light"] {
-            --primary: #F0522F;
-            --secondary: #E8336E;
-            --accent: #7C4DE0;
+            --primary: #007aff;
+            --secondary: #5856d6;
+            --accent: #bf5af2;
             --dark: #f5f5f7;
             --darker: #ffffff;
             --card-bg: rgba(255, 255, 255, 0.72);
-            --grad-primary: linear-gradient(135deg, #F0522F, #E8336E);
+            --grad-primary: linear-gradient(135deg, #007aff, #bf5af2);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
@@ -208,15 +208,15 @@
         }
         
         [data-theme="dark"] .fixed-header {
-            background: rgba(10, 14, 26, 0.85);
+            background: rgba(17, 24, 39, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
         }
         
-        /* Theme Toggle Button - Floating Bottom Right */
+        /* Theme Toggle Button - Floating above tab bar */
         .theme-toggle {
             position: fixed;
-            bottom: 1.5rem;
+            bottom: 6.2rem;
             right: 1.5rem;
             z-index: 1000;
             width: 50px;
@@ -289,46 +289,28 @@
             color: #1c1c1e;
         }
         
-        /* Light mode Muscle Card - Liquid Glass */
-        [data-theme="light"] .muscle-card {
-            background: rgba(255, 255, 255, 0.72);
+        /* Light mode Muscle Row - Liquid Glass */
+        [data-theme="light"] .muscle-row {
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 0.5px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 
-                0 4px 6px rgba(0, 0, 0, 0.02),
-                0 12px 24px rgba(0, 0, 0, 0.04),
-                inset 0 0.5px 0 rgba(255, 255, 255, 0.8);
-        }
-        
-        [data-theme="light"] .muscle-card::before {
-            background: linear-gradient(45deg, var(--primary), var(--accent), var(--secondary));
-            opacity: 0;
-        }
-        
-        [data-theme="light"] .muscle-card:hover::before {
-            opacity: 0.5;
-        }
-        
-        [data-theme="light"] .muscle-card:hover {
-            box-shadow: 
-                0 8px 12px rgba(0, 0, 0, 0.03),
-                0 16px 32px rgba(0, 0, 0, 0.06),
-                inset 0 0.5px 0 rgba(255, 255, 255, 0.9);
         }
         
         [data-theme="light"] .muscle-name {
             color: #1c1c1e;
         }
+
+        [data-theme="light"] .muscle-meta {
+            color: #6e6e73;
+        }
         
         /* Light mode Buttons */
         [data-theme="light"] .btn-primary {
             background: var(--grad-primary);
-            box-shadow: 0 2px 10px rgba(240, 82, 47, 0.3);
+            box-shadow: 0 2px 10px rgba(0, 122, 255, 0.3);
         }
 
         [data-theme="light"] .btn-primary:hover {
-            box-shadow: 0 4px 14px rgba(232, 51, 110, 0.4);
+            box-shadow: 0 4px 14px rgba(191, 90, 242, 0.4);
         }
         
         [data-theme="light"] #input-modal-cancel {
@@ -626,6 +608,7 @@
         .page { 
             display: none; 
             animation: fadeIn 0.4s ease-out;
+            padding-bottom: 6.5rem; /* 给底部 Tab 栏留出空间 */
         }
         
         @keyframes fadeIn {
@@ -697,24 +680,6 @@
             border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
         }
         
-        .app-title {
-            font-size: 2.6rem;
-            font-weight: 900;
-            background: linear-gradient(90deg, var(--primary), var(--secondary) 55%, var(--accent));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 0.5rem;
-            letter-spacing: -1px;
-        }
-        
-        .app-subtitle {
-            color: #94a3b8;
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
         /* 卡片样式 */
         .card {
             background: linear-gradient(145deg, rgba(23, 32, 56, 0.85), rgba(16, 22, 40, 0.85));
@@ -757,208 +722,285 @@
             font-size: 1.3rem;
         }
         
-        /* 网格布局 - 默认2列 */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
+        /* ===== 底部 Tab 导航栏（移动 App 风） ===== */
+        .tab-bar {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: max(env(safe-area-inset-bottom), 14px);
+            z-index: 900;
+            display: flex;
+            gap: 0.25rem;
+            width: min(92vw, 420px);
+            padding: 0.5rem;
+            border-radius: 26px;
+            background: rgba(17, 24, 39, 0.82);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(99, 112, 141, 0.28);
+            box-shadow: 0 14px 38px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.25s ease, transform 0.3s var(--spring);
         }
 
-        /* 平板端 - 保持2列，不要显示4列 */
-        @media (min-width: 641px) and (max-width: 1023px) {
-            .grid-container {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1.25rem;
-            }
-            
-            .muscle-card {
-                height: 180px;
-            }
+        [data-theme="light"] .tab-bar {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
         }
 
-        /* 桌面端 - 3列布局 */
-        @media (min-width: 1024px) {
-            .grid-container {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 1.5rem;
-            }
+        .tab-bar.tab-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
         }
 
-        /* 手机端特定样式 */
-        @media (max-width: 640px) {
-            /* 主题切换按钮适配 */
-            .theme-toggle {
-                width: 44px;
-                height: 44px;
-                bottom: 1rem;
-                right: 1rem;
-                font-size: 1.1rem;
-            }
-
-            /* 所有卡片保持2列布局，不独占一行 */
-            .muscle-card {
-                grid-column: auto !important;
-            }
-
-            /* 调整卡片高度以适应更小的屏幕 */
-            .muscle-card {
-                height: 160px;
-            }
-
-            /* 调整图标和文字大小 */
-            .muscle-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 1.8rem;
-                border-radius: 18px;
-            }
-
-            .muscle-name {
-                font-size: 1.2rem;
-            }
-
-            /* 动作管理页面的按钮样式 */
-            #exercise-management-page .flex.gap-3 {
-                flex-direction: column;
-            }
-
-            #exercise-management-page .flex.gap-3 > * {
-                width: 100%;
-            }
-
-            #exercise-management-page .flex.gap-3 > button {
-                margin-top: 0.5rem;
-            }
-
-            /* 小屏幕返回按钮调整 */
-            .page-header .btn-action {
-                padding: 8px 12px;
-                font-size: 0.9rem;
-            }
-            
-            .page-header .btn-action i {
-                font-size: 0.9rem;
-                margin-right: 4px !important;
-            }
-            
-            /* 移动端page-header左右贴合屏幕 */
-            .page-header {
-                margin-left: -1rem;
-                margin-right: -1rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-        }
-
-        /* 平板端卡片样式 */
-        @media (min-width: 641px) and (max-width: 1023px) {
-            .muscle-card {
-                height: 180px;
-            }
-            
-            .muscle-icon {
-                font-size: 3rem;
-            }
-            
-            .muscle-name {
-                font-size: 1.3rem;
-            }
-        }
-
-        /* 桌面端卡片样式 */
-        @media (min-width: 1024px) {
-            .muscle-card {
-                height: 200px;
-            }
-            
-            .muscle-icon {
-                font-size: 3.5rem;
-            }
-            
-            .muscle-name {
-                font-size: 1.4rem;
-            }
-        }
-        
-        /* 肌肉群卡片 */
-        .muscle-card {
+        .tab-item {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-            border-radius: 20px;
+            gap: 3px;
+            padding: 0.55rem 0 0.4rem;
+            border: none;
+            background: transparent;
+            border-radius: 18px;
             cursor: pointer;
-            transition: transform 0.3s var(--spring), box-shadow 0.3s ease, border-color 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            height: 200px;
-            background:
-                radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--mc, var(--primary)) 22%, transparent), transparent 55%),
-                linear-gradient(145deg, rgba(23, 32, 56, 0.9), rgba(14, 19, 36, 0.9));
-            border: 1px solid color-mix(in srgb, var(--mc, var(--primary)) 18%, rgba(99, 112, 141, 0.25));
+            color: #8a94a8;
+            font-size: 0.68rem;
+            font-weight: 500;
+            transition: color 0.25s ease, background 0.25s ease;
         }
 
-        /* 部位主题色（主页卡片按 data-muscle 注入） */
-        .muscle-card[data-muscle="chest"]     { --mc: #FF3E6C; }
-        .muscle-card[data-muscle="back"]      { --mc: #3B82F6; }
-        .muscle-card[data-muscle="shoulders"] { --mc: #8B5CF6; }
-        .muscle-card[data-muscle="legs"]      { --mc: #F59E0B; }
-        .muscle-card[data-muscle="manage"]    { --mc: #10B981; }
-        .muscle-card[data-muscle="planner"]   { --mc: #FF6B35; }
+        [data-theme="light"] .tab-item { color: #8e8e93; }
 
-        /* 图标容器：部位色渐变圆角块 */
-        .muscle-icon {
-            width: 72px;
-            height: 72px;
+        .tab-item i {
+            font-size: 1.2rem;
+            transition: transform 0.35s var(--spring);
+        }
+
+        .tab-item.active {
+            color: var(--primary);
+            background: color-mix(in srgb, var(--primary) 14%, transparent);
+        }
+
+        .tab-item.active i { transform: translateY(-2px) scale(1.12); }
+
+        .tab-item:active i { transform: scale(0.88); }
+
+        /* 主页：问候页头 */
+        .home-top {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .home-date {
+            font-size: 0.85rem;
+            color: #8a94a8;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.15rem;
+        }
+
+        [data-theme="light"] .home-date { color: #8e8e93; }
+
+        .home-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: var(--grad-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ===== 主页：全宽部位列表卡片 ===== */
+        .muscle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .muscle-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.05rem 1.15rem;
+            border-radius: 22px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s var(--spring), box-shadow 0.3s ease, border-color 0.3s ease;
+            background:
+                radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--mc, var(--primary)) 14%, transparent), transparent 55%),
+                linear-gradient(145deg, rgba(23, 32, 56, 0.9), rgba(14, 19, 36, 0.9));
+            border: 1px solid color-mix(in srgb, var(--mc, var(--primary)) 16%, rgba(99, 112, 141, 0.25));
+        }
+
+        [data-theme="light"] .muscle-row {
+            background:
+                radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--mc, var(--primary)) 10%, transparent), transparent 55%),
+                rgba(255, 255, 255, 0.72);
+            border: 0.5px solid rgba(0, 0, 0, 0.06);
+        }
+
+        /* 部位主题色（按 data-muscle 注入） */
+        .muscle-row[data-muscle="chest"]     { --mc: #FF6B81; }
+        .muscle-row[data-muscle="back"]      { --mc: #4CC9F0; }
+        .muscle-row[data-muscle="shoulders"] { --mc: #A78BFA; }
+        .muscle-row[data-muscle="legs"]      { --mc: #FBBF24; }
+
+        /* 部位色环图标 */
+        .muscle-orb {
+            flex-shrink: 0;
+            width: 58px;
+            height: 58px;
             display: grid;
             place-items: center;
-            font-size: 2.1rem;
-            margin-bottom: 1rem;
-            border-radius: 22px;
-            background: linear-gradient(135deg, color-mix(in srgb, var(--mc, var(--primary)) 85%, white 15%), color-mix(in srgb, var(--mc, var(--primary)) 60%, #0A0E1A 40%));
+            font-size: 1.7rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--mc, var(--primary)) 85%, white 15%), color-mix(in srgb, var(--mc, var(--primary)) 55%, #111827 45%));
             box-shadow:
+                0 0 0 3px color-mix(in srgb, var(--mc, var(--primary)) 22%, transparent),
                 0 8px 20px color-mix(in srgb, var(--mc, var(--primary)) 35%, transparent),
                 inset 0 1px 0 rgba(255, 255, 255, 0.35);
             transition: transform 0.35s var(--spring);
         }
 
-        .muscle-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, var(--mc, var(--primary)), var(--accent), var(--mc, var(--secondary)));
-            z-index: -1;
-            border-radius: 22px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        [data-theme="light"] .muscle-orb {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--mc, var(--primary)) 85%, white 15%), color-mix(in srgb, var(--mc, var(--primary)) 55%, #f5f5f7 45%));
         }
 
-        .muscle-card:hover::before {
-            opacity: 1;
+        .muscle-info {
+            flex: 1;
+            min-width: 0;
         }
 
-        .muscle-card:hover {
-            transform: translateY(-6px) scale(1.015);
-            border-color: color-mix(in srgb, var(--mc, var(--primary)) 45%, transparent);
-            box-shadow:
-                0 18px 40px rgba(0, 0, 0, 0.45),
-                0 0 34px color-mix(in srgb, var(--mc, var(--primary)) 30%, transparent);
-        }
-
-        .muscle-card:hover .muscle-icon {
-            transform: scale(1.12) rotate(-4deg);
+        .muscle-arrow {
+            color: color-mix(in srgb, var(--mc, var(--primary)) 70%, transparent);
+            font-size: 0.95rem;
+            transition: transform 0.3s var(--spring);
         }
 
         .muscle-name {
-            font-size: 1.4rem;
+            font-size: 1.15rem;
             font-weight: 700;
-            text-align: center;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            color: #f1f5f9;
+        }
+
+        .muscle-meta {
+            font-size: 0.78rem;
+            color: #8a94a8;
+            margin-top: 3px;
+        }
+
+        /* 历史页：部位筛选 chips */
+        .history-filter {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.25rem 0 0.9rem;
+            scrollbar-width: none;
+        }
+
+        .history-filter::-webkit-scrollbar { display: none; }
+
+        .filter-chip {
+            flex-shrink: 0;
+            padding: 0.45rem 1.05rem;
+            border-radius: 999px;
+            border: 1px solid rgba(99, 112, 141, 0.35);
+            background: rgba(30, 41, 59, 0.6);
+            color: #9aa4b8;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        [data-theme="light"] .filter-chip {
+            background: rgba(255, 255, 255, 0.75);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #6e6e73;
+        }
+
+        .filter-chip.active {
+            background: var(--grad-primary);
+            border-color: transparent;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent);
+        }
+
+        /* 历史卡片上的部位色标签 */
+        .history-muscle-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            padding: 2px 9px;
+            border-radius: 999px;
+            color: var(--mc, var(--primary));
+            background: color-mix(in srgb, var(--mc, var(--primary)) 14%, transparent);
+            border: 1px solid color-mix(in srgb, var(--mc, var(--primary)) 30%, transparent);
+        }
+
+        .history-muscle-tag::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--mc, var(--primary));
+        }
+
+        .muscle-row:hover {
+            transform: translateY(-3px);
+            border-color: color-mix(in srgb, var(--mc, var(--primary)) 40%, transparent);
+            box-shadow:
+                0 14px 32px rgba(0, 0, 0, 0.35),
+                0 0 26px color-mix(in srgb, var(--mc, var(--primary)) 22%, transparent);
+        }
+
+        [data-theme="light"] .muscle-row:hover {
+            box-shadow:
+                0 12px 28px rgba(0, 0, 0, 0.1),
+                0 0 20px color-mix(in srgb, var(--mc, var(--primary)) 14%, transparent);
+        }
+
+        .muscle-row:hover .muscle-orb { transform: scale(1.08) rotate(-4deg); }
+        .muscle-row:hover .muscle-arrow { transform: translateX(4px); }
+        .muscle-row:active { transform: scale(0.98); }
+
+        /* 动作管理页面的按钮样式 */
+        #exercise-management-page .flex.gap-3 {
+            flex-direction: column;
+        }
+
+        #exercise-management-page .flex.gap-3 > * {
+            width: 100%;
+        }
+
+        #exercise-management-page .flex.gap-3 > button {
+            margin-top: 0.5rem;
+        }
+
+        /* 小屏幕返回按钮调整 */
+        .page-header .btn-action {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        
+        .page-header .btn-action i {
+            font-size: 0.9rem;
+            margin-right: 4px !important;
+        }
+        
+        /* 移动端page-header左右贴合屏幕 */
+        .page-header {
+            margin-left: -1rem;
+            margin-right: -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
         }
         
         /* 按钮样式 */
@@ -1564,16 +1606,14 @@
             to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* 主页卡片交错入场 */
-        .grid-container > .muscle-card {
+        /* 主页部位卡片交错入场 */
+        .muscle-list > .muscle-row {
             animation: blockIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards;
         }
-        .grid-container > .muscle-card:nth-child(1) { animation-delay: 0ms; }
-        .grid-container > .muscle-card:nth-child(2) { animation-delay: 60ms; }
-        .grid-container > .muscle-card:nth-child(3) { animation-delay: 120ms; }
-        .grid-container > .muscle-card:nth-child(4) { animation-delay: 180ms; }
-        .grid-container > .muscle-card:nth-child(5) { animation-delay: 240ms; }
-        .grid-container > .muscle-card:nth-child(6) { animation-delay: 300ms; }
+        .muscle-list > .muscle-row:nth-child(1) { animation-delay: 0ms; }
+        .muscle-list > .muscle-row:nth-child(2) { animation-delay: 60ms; }
+        .muscle-list > .muscle-row:nth-child(3) { animation-delay: 120ms; }
+        .muscle-list > .muscle-row:nth-child(4) { animation-delay: 180ms; }
 
         /* 历史列表交错入场（--i 由 JS 注入） */
         .history-session {
@@ -1619,7 +1659,7 @@
         }
         .save-pop {
             animation: savePop 0.55s var(--spring, cubic-bezier(0.34, 1.56, 0.64, 1));
-            box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.45);
+            box-shadow: 0 0 0 0 rgba(58, 134, 255, 0.45);
         }
 
         /* 尊重系统"减少动态效果"设置 */
@@ -1627,7 +1667,7 @@
             .page.active,
             .exercise-block,
             .set-item,
-            .grid-container > .muscle-card,
+            .muscle-list > .muscle-row,
             .history-session,
             .workout-plan-item {
                 animation: none;
@@ -1687,17 +1727,18 @@
 
         <!-- 主页 -->
         <div id="home-page" class="page">
-            <div class="app-header">
-                <div class="flex items-center justify-between mb-2">
-                    <div></div>
+            <div class="app-header" style="text-align: left;">
+                <div class="home-top">
+                    <div>
+                        <p class="home-date" id="home-date"></p>
+                        <h1 class="home-title">健身追踪器</h1>
+                    </div>
                     <div id="user-area" class="flex items-center gap-2">
                         <!-- 登录按钮或用户头像会通过JS动态填充 -->
                     </div>
                 </div>
-                <h1 class="app-title">健身追踪器</h1>
-                <p class="app-subtitle">记录你的每一次训练，见证身体的变化</p>
                 <!-- 手动同步按钮 + 状态显示 -->
-                <div class="flex justify-center mt-3">
+                <div class="flex mt-3">
                     <button id="sync-button" onclick="manualSync()"
                             class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-700/60 hover:bg-gray-600/60 border border-gray-600/50 text-sm text-gray-300 transition-colors">
                         <i class="fas fa-sync-alt text-xs" id="sync-icon"></i>
@@ -1706,39 +1747,61 @@
                 </div>
             </div>
             
-            <div class="grid-container">
-                <div class="muscle-card" data-muscle="chest" onclick="showTrainingPage('chest', '胸部训练')">
-                    <div class="muscle-icon">💪</div>
-                    <div class="muscle-name">胸 & 三头</div>
+            <div class="muscle-list">
+                <div class="muscle-row" data-muscle="chest" onclick="showTrainingPage('chest', '胸部训练')">
+                    <div class="muscle-orb">💪</div>
+                    <div class="muscle-info">
+                        <div class="muscle-name">胸 & 三头</div>
+                        <div class="muscle-meta" id="muscle-meta-chest">查看训练记录</div>
+                    </div>
+                    <i class="fas fa-chevron-right muscle-arrow"></i>
                 </div>
 
-                <div class="muscle-card" data-muscle="back" onclick="showTrainingPage('back', '背部训练')">
-                    <div class="muscle-icon">🚀</div>
-                    <div class="muscle-name">背 & 二头</div>
+                <div class="muscle-row" data-muscle="back" onclick="showTrainingPage('back', '背部训练')">
+                    <div class="muscle-orb">🚀</div>
+                    <div class="muscle-info">
+                        <div class="muscle-name">背 & 二头</div>
+                        <div class="muscle-meta" id="muscle-meta-back">查看训练记录</div>
+                    </div>
+                    <i class="fas fa-chevron-right muscle-arrow"></i>
                 </div>
 
-                <div class="muscle-card" data-muscle="shoulders" onclick="showTrainingPage('shoulders', '肩部训练')">
-                    <div class="muscle-icon">🏋️</div>
-                    <div class="muscle-name">肩部训练</div>
+                <div class="muscle-row" data-muscle="shoulders" onclick="showTrainingPage('shoulders', '肩部训练')">
+                    <div class="muscle-orb">🏋️</div>
+                    <div class="muscle-info">
+                        <div class="muscle-name">肩部训练</div>
+                        <div class="muscle-meta" id="muscle-meta-shoulders">查看训练记录</div>
+                    </div>
+                    <i class="fas fa-chevron-right muscle-arrow"></i>
                 </div>
 
-                <div class="muscle-card" data-muscle="legs" onclick="showTrainingPage('legs', '腿部训练')">
-                    <div class="muscle-icon">🦵</div>
-                    <div class="muscle-name">腿部训练</div>
-                </div>
-
-                <div class="muscle-card" data-muscle="manage" onclick="showExerciseManagementPage()">
-                    <div class="muscle-icon">⚙️</div>
-                    <div class="muscle-name">动作管理</div>
-                </div>
-
-                <div class="muscle-card" data-muscle="planner" onclick="showWorkoutPlannerPage()">
-                    <div class="muscle-icon">📊</div>
-                    <div class="muscle-name">训练计划</div>
+                <div class="muscle-row" data-muscle="legs" onclick="showTrainingPage('legs', '腿部训练')">
+                    <div class="muscle-orb">🦵</div>
+                    <div class="muscle-info">
+                        <div class="muscle-name">腿部训练</div>
+                        <div class="muscle-meta" id="muscle-meta-legs">查看训练记录</div>
+                    </div>
+                    <i class="fas fa-chevron-right muscle-arrow"></i>
                 </div>
             </div>
-            
-     
+        </div>
+
+        <!-- 训练历史页（Tab：历史） -->
+        <div id="history-page" class="page">
+            <div class="page-header mb-4" style="border:none;">
+                <h1 class="text-2xl font-bold text-white"><i class="fas fa-clipboard-list mr-2" style="color:var(--primary);"></i>训练历史</h1>
+                <div class="spacer"></div>
+            </div>
+            <div class="history-filter" id="history-filter">
+                <button class="filter-chip active" data-filter="all" onclick="filterGlobalHistory('all')">全部</button>
+                <button class="filter-chip" data-filter="chest" onclick="filterGlobalHistory('chest')">胸 & 三头</button>
+                <button class="filter-chip" data-filter="back" onclick="filterGlobalHistory('back')">背 & 二头</button>
+                <button class="filter-chip" data-filter="shoulders" onclick="filterGlobalHistory('shoulders')">肩部</button>
+                <button class="filter-chip" data-filter="legs" onclick="filterGlobalHistory('legs')">腿部</button>
+            </div>
+            <div id="global-history-container" class="space-y-4">
+                <!-- 全量历史记录内容（JS 渲染） -->
+            </div>
         </div>
 
         <!-- 训练页面 -->
@@ -1910,7 +1973,26 @@
             </div>
         </div>
 </div>
-    </div>
+
+    <!-- 底部 Tab 导航栏（仅主页面显示，训练/登录等子页面自动隐藏） -->
+    <nav id="tab-bar" class="tab-bar">
+        <button class="tab-item active" data-tab="home-page" onclick="switchTab('home-page')">
+            <i class="fas fa-house"></i>
+            <span>首页</span>
+        </button>
+        <button class="tab-item" data-tab="history-page" onclick="switchTab('history-page')">
+            <i class="fas fa-clipboard-list"></i>
+            <span>历史</span>
+        </button>
+        <button class="tab-item" data-tab="workout-planner-page" onclick="switchTab('workout-planner-page')">
+            <i class="fas fa-bullseye"></i>
+            <span>计划</span>
+        </button>
+        <button class="tab-item" data-tab="exercise-management-page" onclick="switchTab('exercise-management-page')">
+            <i class="fas fa-gear"></i>
+            <span>管理</span>
+        </button>
+    </nav>
 
     <!-- 模态框 -->
     <div id="modal" class="modal-backdrop hidden">
@@ -2323,7 +2405,7 @@
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             // Get button position for circle animation
-            const button = event.currentTarget;
+            const button = event?.currentTarget || document.querySelector('.theme-toggle');
             const rect = button.getBoundingClientRect();
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
@@ -2501,6 +2583,7 @@
 
         // --- 页面导航逻辑 ---
         const pages = document.querySelectorAll('.page');
+        const TAB_PAGES = ['home-page', 'history-page', 'workout-planner-page', 'exercise-management-page'];
         function showPage(pageId) {
             const apply = () => pages.forEach(page => page.classList.toggle('active', page.id === pageId));
             // View Transitions 页面转场（不支持的浏览器自动降级直切）
@@ -2509,10 +2592,58 @@
             } else {
                 apply();
             }
+            updateTabBar(pageId);
+        }
+
+        // Tab 栏联动：仅 4 个主页面显示 Tab 栏，子页面（训练/登录）自动隐藏
+        function updateTabBar(pageId) {
+            const tabBar = document.getElementById('tab-bar');
+            if (!tabBar) return;
+            tabBar.classList.toggle('tab-hidden', !TAB_PAGES.includes(pageId));
+            tabBar.querySelectorAll('.tab-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.tab === pageId);
+            });
+        }
+
+        // 底部 Tab 切换入口
+        async function switchTab(pageId) {
+            if (pageId === 'home-page') {
+                showHomePage();
+                updateHomeMeta();
+            } else if (pageId === 'history-page') {
+                await showHistoryPage();
+            } else if (pageId === 'workout-planner-page') {
+                await showWorkoutPlannerPage();
+            } else if (pageId === 'exercise-management-page') {
+                await showExerciseManagementPage();
+            }
+        }
+
+        // 主页部位卡片摘要：各部位累计训练次数 + 最近一次日期
+        function updateHomeMeta() {
+            const now = new Date();
+            const dateEl = document.getElementById('home-date');
+            if (dateEl) {
+                const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+                dateEl.textContent = `${now.getMonth() + 1}月${now.getDate()}日 星期${weekdays[now.getDay()]}`;
+            }
+            ['chest', 'back', 'shoulders', 'legs'].forEach(m => {
+                const el = document.getElementById(`muscle-meta-${m}`);
+                if (!el) return;
+                const list = workoutStore.listByMuscle(m);
+                if (list.length === 0) {
+                    el.textContent = '还没有记录，开始第一次训练吧';
+                    return;
+                }
+                const latest = list[0].session_date;
+                const d = new Date(latest + 'T00:00:00');
+                el.textContent = `共 ${list.length} 次训练 · 最近 ${d.getMonth() + 1}/${d.getDate()}`;
+            });
         }
 
         function showHomePage() {
             showPage('home-page'); // 显示主页
+            updateHomeMeta(); // 刷新部位摘要与日期
             // 注意：不再清除 currentSessionData_ 草稿——中途切到计划/其他页面再回来要能继续记录；
             // 草稿只在保存成功（saveSession）后清除
             // 清空动作管理页面的选择
@@ -3717,6 +3848,71 @@
             }
         }
 
+        // --- 全局历史页（Tab：历史） ---
+        let globalHistoryFilter = 'all';
+        const MUSCLE_LABELS = { chest: '胸 & 三头', back: '背 & 二头', shoulders: '肩部', legs: '腿部' };
+        const MUSCLE_COLORS = { chest: '#FF6B81', back: '#4CC9F0', shoulders: '#A78BFA', legs: '#FBBF24' };
+
+        async function showHistoryPage() {
+            showPage('history-page');
+            await loadGlobalHistory();
+        }
+
+        function filterGlobalHistory(muscle) {
+            globalHistoryFilter = muscle;
+            document.querySelectorAll('#history-filter .filter-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.filter === muscle);
+            });
+            loadGlobalHistory();
+        }
+
+        async function loadGlobalHistory() {
+            const container = document.getElementById('global-history-container');
+            if (!container) return;
+            const all = localDB.getWorkouts()
+                .filter(w => !w.deleted)
+                .sort((a, b) => (b.session_date + (b.uid || '')).localeCompare(a.session_date + (a.uid || '')));
+            const sessions = globalHistoryFilter === 'all' ? all : all.filter(w => w.muscle_group === globalHistoryFilter);
+
+            if (sessions.length === 0) {
+                const syncing = navigator.onLine && currentUser && !currentUser.offline && localDB.getWorkouts().length === 0;
+                container.innerHTML = syncing
+                    ? `<div><div class="skeleton history-skeleton"></div><div class="skeleton history-skeleton"></div><div class="skeleton history-skeleton"></div>
+                       <p class="text-blue-400 text-center py-2"><i class="fas fa-cloud-download-alt mr-2"></i>正在从云端同步历史记录...</p></div>`
+                    : `<p class="text-gray-500 text-center py-10"><i class="fas fa-inbox mr-2"></i>暂无训练记录</p>`;
+                return;
+            }
+
+            let html = '';
+            sessions.forEach((session, sIdx) => {
+                const mc = MUSCLE_COLORS[session.muscle_group] || 'var(--primary)';
+                const label = MUSCLE_LABELS[session.muscle_group] || session.muscle_group;
+                html += `
+                    <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50" style="--i:${Math.min(sIdx, 8)}">
+                        <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
+                                <span class="history-muscle-tag" style="--mc:${mc}">${label}</span>
+                            </div>
+                            <button onclick="deleteSession('${session.uid}')" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
+                        </div>
+                        <div class="space-y-3">
+                `;
+                session.exercises_data.forEach(workout => {
+                    html += `
+                            <div>
+                                <p class="font-semibold text-white">${workout.exercise_name}</p>
+                                <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
+                                    ${workout.sets_data.map((s, i) => formatSetDisplay(s, i)).join('<br>')}
+                                </div>
+                            </div>
+                    `;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
         async function deleteSession(uid) {
             // 使用自定义确认模态框替代原生的 confirm()
             showConfirmModal('确认删除', '确定要删除这次训练记录吗？此操作无法撤销。', async () => {
@@ -3725,7 +3921,11 @@
                     workoutStore.softDelete(uid);
                     const synced = await syncManager.sync();
                     showModal('成功', synced ? '训练记录已删除。' : '已在本地删除，联网后会自动同步到云端。');
-                    await loadHistory(); // 重新加载历史记录以更新界面
+                    await loadHistory(); // 重新加载训练页历史记录以更新界面
+                    // 历史 Tab 处于激活态时同步刷新全局历史
+                    if (document.getElementById('history-page')?.classList.contains('active')) {
+                        await loadGlobalHistory();
+                    }
                 } catch (error) {
                     showModal('删除失败', error.message);
                 }
@@ -4038,6 +4238,14 @@
                 if (document.getElementById('exercise-management-page')?.classList.contains('active')) {
                     loadExercisesForManagement(currentManageMuscleGroup);
                     loadCommonExercises();
+                }
+                // 刷新全局历史页
+                if (document.getElementById('history-page')?.classList.contains('active')) {
+                    loadGlobalHistory();
+                }
+                // 刷新主页部位摘要
+                if (document.getElementById('home-page')?.classList.contains('active')) {
+                    updateHomeMeta();
                 }
                 // 恢复计划计算器目标重量（若为空）
                 restorePlanTargetWeight();
