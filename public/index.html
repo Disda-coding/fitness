@@ -2831,10 +2831,10 @@
                                 optionsHtml += '</optgroup>';
                             }
                             
-                            // 公用动作组
+                            // 公用动作组（过滤与自定义重名的，避免下拉框重复出现）
                             if (commonExercises.length > 0) {
                                 optionsHtml += '<optgroup label="公用动作">';
-                                commonExercises.forEach(ex => {
+                                commonExercises.filter(ex => !customExercises.includes(ex)).forEach(ex => {
                                     optionsHtml += `<option value="${ex}">${ex}</option>`;
                                 });
                                 optionsHtml += '</optgroup>';
@@ -2934,10 +2934,10 @@
                     optionsHtml += '</optgroup>';
                 }
                 
-                // 公用动作组
+                // 公用动作组（过滤与自定义重名的，避免下拉框重复出现）
                 if (commonExercises.length > 0) {
                     optionsHtml += '<optgroup label="公用动作">';
-                    commonExercises.forEach(ex => {
+                    commonExercises.filter(ex => !customExercises.includes(ex)).forEach(ex => {
                         optionsHtml += `<option value="${ex}">${ex}</option>`;
                     });
                     optionsHtml += '</optgroup>';
@@ -3216,10 +3216,10 @@
                 optionsHtml += '</optgroup>';
             }
 
-            // 公用动作组
+            // 公用动作组（过滤与自定义重名的，避免下拉框重复出现）
             if (commonExercises.length > 0) {
                 optionsHtml += '<optgroup label="公用动作">';
-                commonExercises.forEach(ex => {
+                commonExercises.filter(ex => !customExercises.includes(ex)).forEach(ex => {
                     optionsHtml += `<option value="${ex}">${ex}</option>`;
                 });
                 optionsHtml += '</optgroup>';

@@ -65,6 +65,18 @@ async function ensureSyncColumns(env) {
   }
   try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_workout_uid ON workout_sessions(uid)").run(); } catch (e) {}
   try { await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_ex_uid ON custom_exercises(uid)").run(); } catch (e) {}
+  // 公共动作种子数据：幂等入库（入库后管理页可见可编辑，/sync 会同步到客户端）
+  try {
+    const seedCommon = ['卷腹', '平板支撑', '俄罗斯转体', '悬垂举腿', '仰卧抬腿'];
+    for (const name of seedCommon) {
+      await env.DB.prepare(
+        `INSERT INTO common_exercises (exercise_name, updated_at, deleted) VALUES (?,?,0)
+         ON CONFLICT(exercise_name) DO UPDATE SET deleted = 0, updated_at = excluded.updated_at`
+      ).bind(name, now).run();
+    }
+  } catch (e) {
+    console.error('seed common exercises error:', e);
+  }
   try {
     await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_meta (
       user_id INTEGER NOT NULL,
@@ -307,16 +319,6 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
       "SELECT exercise_name FROM common_exercises WHERE IFNULL(deleted,0) = 0 ORDER BY exercise_name"
     ).all();
 
-    const coreExercises = ['卷腹', '平板支撑', '俄罗斯转体', '悬垂举腿', '仰卧抬腿'];
-
-    const existingCommonNames = commonResults.map(r => r.exercise_name);
-    const mergedCommonResults = [...commonResults];
-    coreExercises.forEach(coreEx => {
-      if (!existingCommonNames.includes(coreEx)) {
-        mergedCommonResults.push({ exercise_name: coreEx });
-      }
-    });
-
     const { results: sessionResults } = await c.env.DB.prepare(
       "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) AND IFNULL(deleted,0) = 0"
     ).bind(muscle, userId).all();
@@ -336,7 +338,7 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
     });
 
     const custom = customResults.map(r => r.exercise_name);
-    const common = mergedCommonResults.map(r => r.exercise_name);
+    const common = commonResults.map(r => r.exercise_name);
 
     // Sort by frequency (descending), then alphabetically
     const sortByFrequency = (a, b) => {
