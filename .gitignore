@@ -3,3 +3,6 @@ node_modules/
 *.log
 .env
 .json
+
+# wrangler 本地运行产物（dev 数据库、打包临时文件）
+.wrangler/
