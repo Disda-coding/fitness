@@ -2652,8 +2652,11 @@
             try {
                 if (loader) loader.classList.remove('hidden');
 
-                // 离线优先：从本地数据渲染，后台同步刷新
-                commonExercises = localDB.getCommonExercises().filter(x => !x.deleted).map(x => x.exercise_name);
+                // 离线优先：从本地数据渲染，按高频推荐排序（公用动作无肌群上下文，用全局使用频率；频率相同按字母顺序）
+                commonExercises = sortByFrequencyThenName(
+                    localDB.getCommonExercises().filter(x => !x.deleted).map(x => x.exercise_name),
+                    computeExerciseFrequency(null)
+                );
                 renderCommonExercises();
                 if (navigator.onLine && currentUser && !syncManager.syncing) syncManager.sync();
             } catch (error) {
