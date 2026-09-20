@@ -35,9 +35,11 @@ function generateUUID() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-// --- Lazy Migration: 同步字段迁移（幂等，每次调用sync时执行，开销极小） ---
+// --- Lazy Migration: 同步字段迁移（幂等；每个 Worker 隔离实例只执行一次，避免每次请求全表回填浪费 D1 读取） ---
+let syncSchemaReady = false;
 const UUID_SQL = "lower(hex(randomblob(8)) || '-' || hex(randomblob(4)) || '-4' || substr(hex(randomblob(3)),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))";
 async function ensureSyncColumns(env) {
+  if (syncSchemaReady) return;
   const now = new Date().toISOString();
   const alters = [
     "ALTER TABLE workout_sessions ADD COLUMN uid TEXT",
@@ -86,6 +88,7 @@ async function ensureSyncColumns(env) {
       PRIMARY KEY (user_id, key)
     )`).run();
   } catch (e) {}
+  syncSchemaReady = true;
 }
 
 // CORS with credentials support
@@ -319,23 +322,15 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
       "SELECT exercise_name FROM common_exercises WHERE IFNULL(deleted,0) = 0 ORDER BY exercise_name"
     ).all();
 
-    const { results: sessionResults } = await c.env.DB.prepare(
-      "SELECT exercises_data FROM workout_sessions WHERE muscle_group = ? AND (user_id = ? OR user_id IS NULL) AND IFNULL(deleted,0) = 0"
+    // 频率统计：用 json_each 在 D1 端聚合计数，避免把整表 exercises_data 大 JSON 拉到 Worker 再解析
+    const { results: freqResults } = await c.env.DB.prepare(
+      `SELECT je.value->>'$.exercise_name' AS name, COUNT(*) AS cnt
+       FROM workout_sessions ws, json_each(ws.exercises_data) je
+       WHERE ws.muscle_group = ? AND (ws.user_id = ? OR ws.user_id IS NULL) AND IFNULL(ws.deleted,0) = 0
+       GROUP BY name`
     ).bind(muscle, userId).all();
-
-    // Count exercise frequency
     const frequency = {};
-    sessionResults.forEach(session => {
-      try {
-        const exercises = JSON.parse(session.exercises_data);
-        exercises.forEach(ex => {
-          const name = ex.exercise_name;
-          frequency[name] = (frequency[name] || 0) + 1;
-        });
-      } catch (e) {
-        // Skip invalid data
-      }
-    });
+    freqResults.forEach(r => { if (r.name) frequency[r.name] = r.cnt; });
 
     const custom = customResults.map(r => r.exercise_name);
     const common = commonResults.map(r => r.exercise_name);
@@ -344,7 +339,7 @@ app.get('/exercises/:muscle', requireAuth, async (c) => {
     const sortByFrequency = (a, b) => {
       const freqA = frequency[a] || 0;
       const freqB = frequency[b] || 0;
-      if (freqA !== freqA) return freqB - freqA;
+      if (freqA !== freqB) return freqB - freqA;
       return a.localeCompare(b);
     };
 
@@ -566,6 +561,9 @@ app.post('/sync', requireAuth, async (c) => {
     const clientCommon = Array.isArray(body.commonExercises) ? body.commonExercises : [];
     const clientMeta = body.meta || {}; // { key: {value, updated_at} }
     const now = new Date().toISOString();
+    // 增量同步水位：客户端携带 since 时，拉取只返回 updated_at > since 的变更行，
+    // 推送按 uid 逐条走唯一索引比对，避免每次同步全表读取浪费 D1 配额；不携带则保持旧全量行为
+    const since = typeof body.since === 'string' && body.since ? body.since : null;
 
     const pullWorkouts = [];
     const pullCustom = [];
@@ -573,15 +571,34 @@ app.post('/sync', requireAuth, async (c) => {
     const pullMeta = {};
 
     // --- 1. 同步 workout_sessions ---
-    const { results: serverWorkouts } = await c.env.DB.prepare(
-      "SELECT uid, muscle_group, session_date, exercises_data, updated_at, deleted FROM workout_sessions WHERE (user_id = ? OR user_id IS NULL)"
-    ).bind(userId).all();
-    const serverWMap = new Map(serverWorkouts.map(w => [w.uid, w]));
+    // serverWorkouts：全量模式下是全表，增量模式下只有变更行（用于 pull）
+    // serverWMap：仅全量模式构建（用于 push 比对；增量模式 push 改为逐条按 uid 查询）
+    let serverWorkouts = [];
+    const serverWMap = new Map();
+    if (since) {
+      const { results } = await c.env.DB.prepare(
+        "SELECT uid, muscle_group, session_date, exercises_data, updated_at, deleted FROM workout_sessions WHERE (user_id = ? OR user_id IS NULL) AND updated_at > ?"
+      ).bind(userId, since).all();
+      serverWorkouts = results;
+    } else {
+      const { results } = await c.env.DB.prepare(
+        "SELECT uid, muscle_group, session_date, exercises_data, updated_at, deleted FROM workout_sessions WHERE (user_id = ? OR user_id IS NULL)"
+      ).bind(userId).all();
+      serverWorkouts = results;
+      results.forEach(w => serverWMap.set(w.uid, w));
+    }
     const clientWMap = new Map(clientWorkouts.filter(w => w.uid).map(w => [w.uid, w]));
 
     for (const cw of clientWorkouts) {
       if (!cw.uid || !cw.muscle_group || !Array.isArray(cw.exercises_data)) continue;
-      const sw = serverWMap.get(cw.uid);
+      let sw = serverWMap.get(cw.uid);
+      if (!sw && since) {
+        // 增量模式：按 uid 精确查询（唯一索引，单行读取）
+        const { results: swRows } = await c.env.DB.prepare(
+          "SELECT uid, muscle_group, session_date, exercises_data, updated_at, deleted FROM workout_sessions WHERE uid = ? LIMIT 1"
+        ).bind(cw.uid).all();
+        sw = swRows[0];
+      }
       const clientUpdatedAt = cw.updated_at || '';
       const clientDeleted = cw.deleted ? 1 : 0;
       if (!sw) {
@@ -611,15 +628,32 @@ app.post('/sync', requireAuth, async (c) => {
     }
 
     // --- 2. 同步 custom_exercises（按uid） ---
-    const { results: serverCustom } = await c.env.DB.prepare(
-      "SELECT uid, muscle_group, exercise_name, updated_at, deleted FROM custom_exercises WHERE (user_id = ? OR user_id IS NULL)"
-    ).bind(userId).all();
-    const serverCMap = new Map(serverCustom.filter(x => x.uid).map(x => [x.uid, x]));
+    let serverCustom = [];
+    const serverCMap = new Map();
+    if (since) {
+      const { results } = await c.env.DB.prepare(
+        "SELECT uid, muscle_group, exercise_name, updated_at, deleted FROM custom_exercises WHERE (user_id = ? OR user_id IS NULL) AND updated_at > ?"
+      ).bind(userId, since).all();
+      serverCustom = results;
+    } else {
+      const { results } = await c.env.DB.prepare(
+        "SELECT uid, muscle_group, exercise_name, updated_at, deleted FROM custom_exercises WHERE (user_id = ? OR user_id IS NULL)"
+      ).bind(userId).all();
+      serverCustom = results;
+      results.filter(x => x.uid).forEach(x => serverCMap.set(x.uid, x));
+    }
     const clientCMap = new Map(clientCustom.filter(x => x.uid).map(x => [x.uid, x]));
 
     for (const cc of clientCustom) {
       if (!cc.uid || !cc.muscle_group || !cc.exercise_name) continue;
-      const sc = serverCMap.get(cc.uid);
+      let sc = serverCMap.get(cc.uid);
+      if (!sc && since) {
+        // 增量模式：按 uid 精确查询（唯一索引，单行读取）
+        const { results: scRows } = await c.env.DB.prepare(
+          "SELECT uid, muscle_group, exercise_name, updated_at, deleted FROM custom_exercises WHERE uid = ? LIMIT 1"
+        ).bind(cc.uid).all();
+        sc = scRows[0];
+      }
       const clientUpdatedAt = cc.updated_at || '';
       const clientDeleted = cc.deleted ? 1 : 0;
       if (!sc) {

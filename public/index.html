@@ -227,6 +227,25 @@
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
+
+        /* 版本号角标 - 右下角半透明（部署时由 scripts/deploy-frontend.js 注入 v{version}-{git短hash}） */
+        .app-version {
+            position: fixed;
+            bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
+            right: 0.6rem;
+            z-index: 999;
+            font-size: 11px;
+            line-height: 1;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            color: #9ca3af;
+            opacity: 0.45;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        [data-theme="light"] .app-version {
+            color: #6b7280;
+        }
         
         /* Light mode card - Liquid Glass */
         [data-theme="light"] .card {
@@ -1511,7 +1530,10 @@
     <button class="theme-toggle" onclick="toggleTheme(event)" title="切换主题">
         <i class="fas fa-sun" id="theme-icon"></i>
     </button>
-    
+
+    <!-- 版本号角标 -->
+    <div class="app-version" id="app-version"></div>
+
     <div class="app-container">
         <!-- 登录页面 -->
         <div id="login-page" class="page">
@@ -1770,7 +1792,6 @@
             </div>
         </div>
 </div>
-    </div>
 
     <!-- 模态框 -->
     <div id="modal" class="modal-backdrop hidden">
@@ -1798,6 +1819,11 @@
     <!-- JavaScript部分保持不变 -->
     <script>
         const API_BASE_URL = '';
+        // 版本号：占位符由 scripts/deploy-frontend.js 在部署时替换为 v{version}-{git短hash}；本地开发显示 dev
+        const APP_VERSION_RAW = '__APP_VERSION__';
+        const APP_VERSION = APP_VERSION_RAW.startsWith('__') ? 'dev' : APP_VERSION_RAW;
+        const appVersionEl = document.getElementById('app-version');
+        if (appVersionEl) appVersionEl.textContent = APP_VERSION;
 
         // ===== 离线同步系统 =====
         // 本地localStorage为第一数据源，服务器为镜像；通过/api/sync双向合并（时间戳新者胜）
@@ -1806,7 +1832,8 @@
             customExercises: 'sync_custom_exercises_v1',
             commonExercises: 'sync_common_exercises_v1',
             meta: 'sync_meta_v1',
-            lastSync: 'sync_last_time_v1'
+            lastSync: 'sync_last_time_v1',
+            syncWatermark: 'sync_watermark_v1'
         };
 
         function generateUUID() {
@@ -1870,6 +1897,25 @@
                         commonExercises: localDB.getCommonExercises(),
                         meta: localDB.getMetaAll()
                     };
+                    // 增量同步：距上次成功同步 7 天内，只推送/拉取变更记录（带 24h 重叠窗口防时钟偏差），节省 D1 读取
+                    // 首次同步或超期则全量（服务端对不带 since 的请求保持全量行为，旧客户端兼容）
+                    const SYNC_FULL_MS = 7 * 24 * 3600 * 1000;
+                    const SYNC_OVERLAP_MS = 24 * 3600 * 1000;
+                    const syncUserKey = currentUser.id || currentUser.username || 'guest';
+                    let watermark = null;
+                    try { watermark = JSON.parse(localStorage.getItem(LS_KEYS.syncWatermark) || '{}')[syncUserKey] || null; } catch (e) {}
+                    if (watermark && watermark.server && watermark.local
+                        && !isNaN(Date.parse(watermark.server)) && (Date.now() - watermark.local) < SYNC_FULL_MS) {
+                        payload.since = new Date(Date.parse(watermark.server) - SYNC_OVERLAP_MS).toISOString();
+                        const dirtyCut = new Date(watermark.local - SYNC_OVERLAP_MS).toISOString();
+                        const dirty = list => list.filter(w => (w.updated_at || '') >= dirtyCut);
+                        payload.workouts = dirty(payload.workouts);
+                        payload.customExercises = dirty(payload.customExercises);
+                        payload.commonExercises = dirty(payload.commonExercises);
+                        for (const k of Object.keys(payload.meta)) {
+                            if ((payload.meta[k].updated_at || '') < dirtyCut) delete payload.meta[k];
+                        }
+                    }
                     const resp = await apiFetch(`${API_BASE_URL}/sync`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1960,6 +2006,15 @@
                     }
 
                     localStorage.setItem(LS_KEYS.lastSync, result.serverTime || new Date().toISOString());
+                    // 记录增量同步水位（按用户隔离）：server=服务器时间（拉取水位），local=本机时间（脏行判定）
+                    try {
+                        const wm = JSON.parse(localStorage.getItem(LS_KEYS.syncWatermark) || '{}');
+                        wm[currentUser.id || currentUser.username || 'guest'] = {
+                            server: result.serverTime || new Date().toISOString(),
+                            local: Date.now()
+                        };
+                        localStorage.setItem(LS_KEYS.syncWatermark, JSON.stringify(wm));
+                    } catch (e) {}
                     this._setState('success');
                     if (changed && typeof this.onDataUpdate === 'function') this.onDataUpdate();
                     return true;
@@ -2883,6 +2938,29 @@
         }
 
         // --- 动作管理 (训练页面和动作管理页面共用) ---
+        // 统计动作使用频率（按动作名出现次数；指定肌群时只统计该肌群，与后端口径一致）
+        function computeExerciseFrequency(muscleGroup) {
+            const frequency = {};
+            localDB.getWorkouts().forEach(w => {
+                if (w.deleted) return;
+                if (muscleGroup && w.muscle_group !== muscleGroup) return;
+                (w.exercises_data || []).forEach(ex => {
+                    if (ex.exercise_name) frequency[ex.exercise_name] = (frequency[ex.exercise_name] || 0) + 1;
+                });
+            });
+            return frequency;
+        }
+
+        // 高频推荐排序：使用频率高的在前，频率相同按字母顺序（zh-CN 拼音序）
+        function sortByFrequencyThenName(names, frequency) {
+            return [...names].sort((a, b) => {
+                const freqA = frequency[a] || 0;
+                const freqB = frequency[b] || 0;
+                if (freqA !== freqB) return freqB - freqA;
+                return a.localeCompare(b, 'zh-CN');
+            });
+        }
+
         async function loadAvailableExercises() {
             // 离线优先：本地数据源构建（本地为唯一真相源，syncManager保证两端一致）
             try {
@@ -2892,22 +2970,15 @@
                 const common = localDB.getCommonExercises()
                     .filter(x => !x.deleted)
                     .map(x => x.exercise_name);
-                customExercises = custom;
-                commonExercises = common;
-                availableExercises = [...new Set([...custom, ...common])].sort((a, b) => a.localeCompare(b, 'zh-CN'));
-
-                // 计算训练频率（按动作名统计，离线可用）
-                const frequency = {};
-                localDB.getWorkouts().filter(w => !w.deleted).forEach(session => {
-                    (session.exercises_data || []).forEach(ex => {
-                        if (ex.exercise_name) frequency[ex.exercise_name] = (frequency[ex.exercise_name] || 0) + 1;
-                    });
-                });
-                exerciseFrequency = frequency;
+                exerciseFrequency = computeExerciseFrequency(currentMuscleGroup);
+                // 列表按高频推荐排序（频率相同按字母顺序），下拉框与管理页共用此顺序
+                customExercises = sortByFrequencyThenName(custom, exerciseFrequency);
+                commonExercises = sortByFrequencyThenName(common, exerciseFrequency);
+                availableExercises = sortByFrequencyThenName([...new Set([...custom, ...common])], exerciseFrequency);
 
                 // 兼容旧缓存机制（防止降级）
                 localStorage.setItem(`exerciseCache_${currentMuscleGroup}`, JSON.stringify({
-                    custom, common, all: availableExercises, frequency, timestamp: Date.now()
+                    custom, common, all: availableExercises, frequency: exerciseFrequency, timestamp: Date.now()
                 }));
             } catch (e) {
                 console.error('本地动作列表构建失败:', e);
@@ -3596,13 +3667,20 @@
             }
 
             try {
-                // 离线优先：从本地数据构建（后台由syncManager保证两端一致）
-                const customExercises = localDB.getCustomExercises()
-                    .filter(x => x.muscle_group === muscle && !x.deleted)
-                    .map(x => x.exercise_name);
-                const commonExercises = localDB.getCommonExercises()
-                    .filter(x => !x.deleted)
-                    .map(x => x.exercise_name);
+                // 离线优先：从本地数据构建（后台由syncManager保证两端一致），按高频推荐排序（频率相同按字母顺序）
+                const frequency = computeExerciseFrequency(muscle);
+                const customExercises = sortByFrequencyThenName(
+                    localDB.getCustomExercises()
+                        .filter(x => x.muscle_group === muscle && !x.deleted)
+                        .map(x => x.exercise_name),
+                    frequency
+                );
+                const commonExercises = sortByFrequencyThenName(
+                    localDB.getCommonExercises()
+                        .filter(x => !x.deleted)
+                        .map(x => x.exercise_name),
+                    frequency
+                );
 
                 if (exerciseListLoader) exerciseListLoader.style.display = 'none'; // 隐藏加载动画
                 else console.warn("Management loader element became null while fetching data.");

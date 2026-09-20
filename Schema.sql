@@ -54,3 +54,8 @@ INSERT OR IGNORE INTO custom_exercises (muscle_group, exercise_name) VALUES
 ('shoulders', '侧平举'),
 ('legs', '深蹲'),
 ('legs', '腿举');
+
+-- 查询性能索引（避免跨用户全表扫描，见 migrations/003_add_indexes.sql）
+CREATE INDEX IF NOT EXISTS idx_ws_user_muscle_date ON workout_sessions(user_id, muscle_group, session_date, session_id);
+CREATE INDEX IF NOT EXISTS idx_ws_user_updated ON workout_sessions(user_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_ce_user_muscle ON custom_exercises(user_id, muscle_group);
