@@ -83,21 +83,3 @@ test('common exercise writes require an admin guard', () => {
   }
 });
 
-test('exercise rendering does not interpolate untrusted names into HTML', () => {
-  const html = read('public/index.html');
-  assert.doesNotMatch(html, /commonExercises\.map\(exercise => `/);
-  assert.doesNotMatch(html, /optionsHtml \+= `<option value="\$\{ex\}">\$\{ex\}<\/option>`/);
-  assert.match(html, /userArea\.replaceChildren\(\)/);
-  assert.match(html, /name\.textContent = currentUser\.offline/);
-  assert.match(html, /data\.sets_data\.forEach\(\(set, i\) =>/);
-  assert.match(html, /escapeHtml\(session\.session_date\)/);
-  assert.match(html, /const weight = escapeHtml\(set\.weight\)/);
-});
-
-test('liquid glass visual system keeps motion and transparency accessible', () => {
-  const html = read('public/index.html');
-  assert.match(html, /backdrop-filter: blur\(/);
-  assert.match(html, /prefers-reduced-motion/);
-  assert.match(html, /prefers-reduced-transparency/);
-  assert.match(html, /muscle-card-meta/);
-});

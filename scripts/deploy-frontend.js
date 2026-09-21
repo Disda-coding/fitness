@@ -1,11 +1,12 @@
 // 部署前端到 Cloudflare Pages（生产分支 main）
 // 流程：注入生产 API 地址 + 版本号（v{package.json version}-{git 短 hash}）→ wrangler pages deploy → 还原文件
 // 还原保证提交到 GitHub 时 API_BASE_URL 为空、版本号保持占位符
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.join(__dirname, '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const file = path.join(root, 'public', 'index.html');
 const original = fs.readFileSync(file, 'utf8');
 
