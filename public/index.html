@@ -2036,12 +2036,21 @@
         const workoutStore = {
             add(muscleGroup, exercisesData) {
                 const workouts = localDB.getWorkouts();
+                const now = new Date().toISOString();
+                // 同一天同部位已提交过：合并进已有记录（误点多次提交场景），同名动作组数拼接
+                const existing = workouts.find(w => !w.deleted && w.muscle_group === muscleGroup && w.session_date === now.slice(0, 10));
+                if (existing) {
+                    existing.exercises_data = mergeExercisesInto(existing.exercises_data || [], exercisesData);
+                    existing.updated_at = now;
+                    localDB.saveWorkouts(workouts);
+                    return existing;
+                }
                 const rec = {
                     uid: generateUUID(),
                     muscle_group: muscleGroup,
                     session_date: new Date().toISOString().slice(0, 10),
                     exercises_data: exercisesData,
-                    updated_at: new Date().toISOString(),
+                    updated_at: now,
                     deleted: 0
                 };
                 workouts.push(rec);
@@ -2077,6 +2086,46 @@
                 return null;
             }
         };
+
+        // 把 extraList 的动作合并进 list（同名动作组数拼接，新动作追加），返回合并后的数组
+        function mergeExercisesInto(list, extraList) {
+            list = list || [];
+            (extraList || []).forEach(ex => {
+                if (!ex || !ex.exercise_name) return;
+                const hit = list.find(m => m.exercise_name === ex.exercise_name);
+                if (hit) hit.sets_data = [...(hit.sets_data || []), ...(ex.sets_data || [])];
+                else list.push({ exercise_name: ex.exercise_name, sets_data: [...(ex.sets_data || [])] });
+            });
+            return list;
+        }
+
+        // 启动迁移：把历史误点提交产生的"同一天同部位"重复记录合并为一条（按历史排序取最早为主记录），
+        // 多余条软删除并随同步上传，多端最终一致；幂等，可重复调用
+        function mergeDuplicateSessions() {
+            const workouts = localDB.getWorkouts();
+            const groups = new Map();
+            workouts.forEach(w => {
+                if (w.deleted) return;
+                const key = `${w.muscle_group}|${w.session_date}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(w);
+            });
+            let changed = false;
+            groups.forEach(list => {
+                if (list.length < 2) return;
+                list.sort((a, b) => (a.session_date + (a.uid || '')).localeCompare(b.session_date + (b.uid || '')));
+                const [main, ...rest] = list;
+                main.exercises_data = mergeExercisesInto(main.exercises_data || [], rest.flatMap(r => r.exercises_data || []));
+                main.updated_at = new Date().toISOString();
+                rest.forEach(r => {
+                    const rec = workouts.find(w => w.uid === r.uid);
+                    if (rec) { rec.deleted = 1; rec.updated_at = main.updated_at; }
+                });
+                changed = true;
+            });
+            if (changed) localDB.saveWorkouts(workouts);
+            return changed;
+        }
 
         let currentMuscleGroup = ''; // 当前选择的肌肉群 (用于训练页面)
         let currentManageMuscleGroup = ''; // 当前选择的肌肉群 (用于动作管理页面)
@@ -3910,6 +3959,9 @@
             handleAuthCallback();
             await checkAuthStatus();
 
+            // 启动迁移：合并历史误点提交产生的同天同部位重复记录（幂等）
+            mergeDuplicateSessions();
+
             // 先绑定同步UI回调（首次同步也能显示状态）
             syncManager.onStateChange = updateSyncButtonUI;
 
@@ -3927,6 +3979,8 @@
 
             // 数据更新回调：同步拉到新数据后刷新当前页面
             syncManager.onDataUpdate = () => {
+                // 全量拉取可能带入其他设备的历史重复记录，拉取后合并一次
+                mergeDuplicateSessions();
                 // 刷新训练页历史（若正在显示）
                 if (currentMuscleGroup && document.getElementById('training-page').classList.contains('active')) {
                     loadHistory();
