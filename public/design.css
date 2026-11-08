@@ -1,0 +1,241 @@
+/* Shared visual system. Business logic and data formats stay in index.html. */
+:root {
+    --canvas: #141719;
+    --surface: #1d2125;
+    --surface-soft: #252a30;
+    --ink: #eef1f5;
+    --muted: #a0a8b3;
+    --line: #343b43;
+    --blue-soft: #25364e;
+    --primary: #498bfa;
+    --secondary: #498bfa;
+    --accent: #498bfa;
+    --card-bg: var(--surface);
+}
+:root[data-theme="light"] {
+    --canvas: #f5f6f8;
+    --surface: #ffffff;
+    --surface-soft: #f1f3f6;
+    --ink: #202833;
+    --muted: #707b8a;
+    --line: #e4e8ee;
+    --blue-soft: #eaf1fd;
+    --primary: #2864df;
+    --secondary: #2864df;
+    --accent: #2864df;
+    --card-bg: var(--surface);
+    color-scheme: light;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+:root { scroll-padding-top: 150px; }
+:root body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; }
+button { touch-action: manipulation; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; }
+button:disabled { opacity: .55; cursor: wait; }
+svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.shell-header {
+    position: sticky; top: 0; z-index: 100;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--canvas); border-bottom: 1px solid var(--line);
+}
+.shell-inner { max-width: 1120px; height: 82px; margin: auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; text-align: left; color: var(--ink); background: none; border: 0; font-size: 16px; font-weight: 700; cursor: pointer; }
+.brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: white; background: #2864df; }
+.brand-mark svg { width: 27px; height: 27px; }
+.brand small { display: block; font-size: 8px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+.shell-actions { display: flex; align-items: center; gap: 16px; }
+.header-divider { height: 20px; width: 1px; background: var(--line); }
+:root .theme-toggle, :root .theme-toggle:hover {
+    position: static; width: 40px; height: 44px; flex-shrink: 0; font-size: 17px;
+    background: transparent; color: var(--muted); border-radius: 12px;
+    transform: none; box-shadow: none; backdrop-filter: none;
+}
+#user-area button { min-height: 40px; padding: 8px 12px; border-radius: 10px; font-size: 13px; }
+:root .app-container { max-width: 1120px; padding: 0 32px 32px; }
+.page { animation: page-appear .2s ease-out; }
+@keyframes page-appear { from { opacity: 0; } to { opacity: 1; } }
+.home-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 52px 0 40px; }
+.eyebrow { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 1.8px; }
+.home-intro .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 2px; }
+.eyebrow > span { display: inline-block; width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
+.home-intro h1 { font-size: clamp(32px, 4vw, 46px); font-weight: 750; letter-spacing: -2px; line-height: 1.35; margin: 12px 0; }
+.heading-accent { color: var(--primary); }
+.intro-copy { color: var(--muted); font-size: 14px; }
+.sync-pill { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 10px 14px; font-size: 12px; min-height: 42px; flex-shrink: 0; cursor: pointer; }
+.sync-pill i { font-size: 11px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-heading h2 { font-size: 16px; font-weight: 650; }
+.section-heading > span { font-size: 12px; color: var(--muted); }
+.training-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 36px; }
+:root .muscle-card {
+    min-width: 0; height: 230px; padding: 20px 24px; align-items: flex-start; justify-content: flex-start;
+    color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+    box-shadow: 0 3px 3px #00000002; backdrop-filter: none; text-align: left; transition: border-color .18s, background .18s, transform .18s;
+}
+:root .muscle-card::before { display: none; }
+.muscle-top { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+.muscle-index { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.card-arrow { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: var(--surface-soft); color: var(--muted); font-size: 18px; }
+.muscle-art { width: 74px; height: 74px; color: var(--primary); margin: 12px 0 14px -8px; stroke-width: 1.65; }
+:root .muscle-name { color: var(--ink); font-size: 19px; font-weight: 650; line-height: 1.5; }
+.muscle-caption { font-size: 9px; font-weight: 500; letter-spacing: 1.3px; color: var(--muted); margin-top: 4px; }
+.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tool-card { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; color: var(--ink); cursor: pointer; }
+.tool-icon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 13px; background: var(--blue-soft); color: var(--primary); font-size: 18px; }
+.tool-card strong { display: block; font-size: 15px; font-weight: 600; }
+.tool-card small { display: block; font-size: 12px; margin-top: 4px; color: var(--muted); }
+.tool-arrow { margin-left: auto; color: var(--muted); }
+.home-footer { display: flex; align-items: center; justify-content: center; gap: 16px; color: var(--muted); font-size: 11px; letter-spacing: 1px; padding: 40px 0 8px; }
+.footer-line { height: 1px; width: 30px; background: var(--line); }
+:root .app-version { position: static; display: none; }
+/* Shared cards, controls and secondary pages. */
+:root .page-header { position: sticky; top: calc(82px + env(safe-area-inset-top, 0px)); z-index: 90; padding: 22px 0; margin: 0 0 8px; background: var(--canvas); border: 0; backdrop-filter: none; }
+.page-header h1 { font-size: 21px; color: var(--ink); }
+:root .card, :root .card:hover { min-width: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: none; transform: none; backdrop-filter: none; }
+:root .card-header { padding-bottom: 20px; margin-bottom: 20px; border-color: var(--line); }
+:root .card-title { color: var(--ink); font-size: 18px; justify-content: flex-start; }
+.card-title i { font-size: 16px; color: var(--primary); }
+:root .btn, :root .btn:hover { min-height: 48px; border-radius: 12px; font-size: 14px; padding: 12px 18px; box-shadow: none; transform: none; transition: background .15s; }
+:root .btn-primary, :root .btn-primary:hover, :root .btn-secondary, :root .btn-secondary:hover { background: #2864df; color: white; }
+:root .btn-action, :root .btn-action:hover { background: var(--surface); border: 1px solid var(--line); color: var(--ink); backdrop-filter: none; }
+:root input, :root select { min-width: 0; min-height: 48px; background-color: var(--surface-soft); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; font-size: 16px; backdrop-filter: none; }
+:root input:focus, :root select:focus { background-color: var(--surface); border-color: var(--primary); box-shadow: 0 0 0 3px var(--blue-soft); }
+:root input::placeholder { color: var(--muted); }
+:root select { padding-right: 34px; }
+:root .text-gray-500, :root .text-gray-400 { color: var(--muted); }
+:root .text-gray-300, :root .text-white { color: var(--ink); }
+#exercise-management-page h3 { text-align: left; font-size: 14px; }
+#exercise-management-page .card-header h2 { text-align: left; }
+/* Training: aligned, touch-friendly rows with a stable action area. */
+.training-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.training-tabs { display: none; }
+.current-panel > .card-header, .history-panel > .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-header .eyebrow { margin-bottom: 4px; font-size: 9px; }
+.panel-note { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.panel-note::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #5e9d84; margin-right: 6px; vertical-align: middle; }
+.history-heading-icon { color: var(--muted); }
+:root .exercise-block { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: none; backdrop-filter: none; }
+.exercise-block > .flex:first-child { gap: 4px; }
+.exercise-block > .flex:first-child > button { min-width: 42px; min-height: 44px; color: var(--muted); border-radius: 9px; }
+:root .exercise-select { background-color: var(--surface-soft); font-size: 15px; font-weight: 600; padding-left: 12px; flex: 1; width: 0; }
+:root .set-columns, :root .set-item { display: grid; grid-template-columns: 38px minmax(0, 1fr) 10px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
+.set-columns { margin-top: 22px; font-size: 11px; text-align: center; color: var(--muted); }
+.set-columns small { font-size: 10px; }
+.set-columns > :first-child { text-align: left; }
+.exercise-block .sets-container { margin-top: 8px; }
+.set-item > span:first-child { width: auto; white-space: nowrap; font-size: 11px; }
+.set-item > span:nth-child(3) { text-align: center; font-size: 11px; }
+:root .set-item input { height: 48px; min-height: 48px; padding: 6px 3px; width: 100%; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; background-color: var(--surface-soft); }
+.set-item > button { min-height: 44px; color: var(--muted); border-radius: 8px; font-size: 20px; }
+:root .add-set-btn, :root .add-set-btn:hover { min-height: 46px; margin-top: 8px; color: var(--primary) !important; background: var(--blue-soft) !important; border: 0; box-shadow: none; font-size: 12px; border-radius: 9px; }
+.session-actions { display: flex; gap: 12px; margin-top: 20px; }
+.session-actions .btn { white-space: nowrap; }
+:root .history-session { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; }
+.history-session h3 { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+.history-session .border-gray-600 { border-color: var(--line); }
+.history-session .font-semibold { font-size: 14px; }
+.history-session .text-sm { font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.9; }
+.history-delete { width: 40px; min-height: 44px; font-size: 15px; }
+:root .modal-content { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 20px 80px #0003; padding: 28px; border-radius: 22px; backdrop-filter: none; max-height: 85dvh; overflow-y: auto; }
+:root .modal-backdrop { background: #0b111d80; backdrop-filter: blur(4px); }
+#modal-title, #input-modal-title { font-size: 18px; white-space: pre-line; }
+#modal-body { font-size: 14px; line-height: 1.8; }
+#modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+#modal-actions .btn { margin-left: 0; }
+:root .login-page { min-height: calc(100dvh - 160px); }
+:root .login-title { color: var(--ink); background: none; -webkit-text-fill-color: currentColor; font-size: 30px; }
+:root .login-logo { color: var(--primary); font-size: 40px; }
+:root .login-btn { background: #2864df; color: white; box-shadow: none; border-radius: 12px; }
+@media (hover: hover) {
+    :root .muscle-card:hover { border-color: var(--primary); background: var(--surface); transform: translateY(-3px); box-shadow: 0 8px 24px #00000008; }
+    .tool-card:hover { border-color: var(--primary); }
+    :root .btn-primary:hover, :root .btn-secondary:hover { background: #2056c6; }
+    .exercise-block button:hover { background-color: var(--surface-soft); }
+}
+@media (max-width: 1023px) {
+    .training-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    :root .muscle-card { height: 210px; }
+    .training-layout { display: block; }
+    .training-tabs { display: flex; padding: 4px; margin: 2px 0 20px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; }
+    .training-tabs button { flex: 1; min-height: 44px; border: 0; border-radius: 9px; color: var(--muted); font-size: 14px; background: transparent; cursor: pointer; }
+    .training-tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 2px 5px #00000008; }
+    #training-page[data-view="current"] .history-panel, #training-page[data-view="history"] .current-panel { display: none; }
+    #training-page { padding-bottom: 92px; }
+    .session-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 95; padding: 12px max(20px, calc((100vw - 1000px) / 2)) calc(12px + env(safe-area-inset-bottom, 0px)); margin: 0; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 24px #00000004; }
+    .session-actions .btn { min-height: 50px; }
+    body.keyboard-open .session-actions { display: none; }
+}
+@media (max-width: 640px) {
+    .shell-inner { height: 68px; padding: 0 20px; gap: 8px; }
+    .brand { gap: 9px; font-size: 14px; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+    .brand-mark svg { width: 23px; height: 23px; }
+    .brand small { font-size: 6px; letter-spacing: 1.4px; }
+    .shell-actions { gap: 6px; }
+    .header-divider { display: none; }
+    #user-area { gap: 4px; }
+    #user-area > img, #user-area > div { display: none; }
+    #user-area button { border: 0; padding: 8px; }
+    :root .theme-toggle { width: 34px; }
+    :root .app-container { padding: 0 20px 24px; }
+    .home-intro { display: block; padding: 30px 0 28px; }
+    .home-intro .eyebrow { font-size: 10px; letter-spacing: 1.5px; }
+    .home-intro h1 { margin: 10px 0; font-size: 34px; letter-spacing: -1.5px; }
+    .intro-copy { font-size: 12px; }
+    .sync-pill { margin-top: 16px; font-size: 11px; min-height: 36px; padding: 7px 11px; }
+    .section-heading { margin-bottom: 12px; }
+    .section-heading h2 { font-size: 14px; }
+    .section-heading > span { font-size: 10px; }
+    .training-choices { gap: 12px; margin-bottom: 26px; }
+    :root .muscle-card { height: 174px; border-radius: 16px; padding: 14px 18px; }
+    .muscle-index { font-size: 10px; }
+    .card-arrow { width: 23px; height: 23px; font-size: 15px; }
+    .muscle-art { width: 54px; height: 54px; margin: 6px 0 8px -5px; }
+    :root .muscle-name { font-size: 17px; }
+    .muscle-caption { font-size: 8px; letter-spacing: 1px; margin-top: 3px; }
+    .tools-grid { grid-template-columns: 1fr; gap: 10px; }
+    .tool-card { padding: 16px; border-radius: 14px; gap: 14px; }
+    .tool-icon { width: 38px; height: 38px; border-radius: 11px; font-size: 16px; }
+    .tool-card strong { font-size: 14px; }
+    .tool-card small { font-size: 11px; margin-top: 2px; }
+    .home-footer { padding-top: 28px; font-size: 10px; }
+    :root .page-header { top: calc(68px + env(safe-area-inset-top, 0px)); margin: 0 -20px 4px; padding: 12px 20px; }
+    .page-header h1 { font-size: 17px; white-space: nowrap; }
+    :root .page-header .btn-action { min-height: 44px; padding: 8px 10px; font-size: 12px; background: none; border: 0; }
+    :root .card { padding: 18px; border-radius: 16px; }
+    :root .card-title { font-size: 16px; }
+    :root .card-header { padding-bottom: 16px; margin-bottom: 16px; }
+    .training-tabs { margin-bottom: 16px; }
+    :root .training-layout > .current-panel, :root .training-layout > .history-panel { padding: 0; background: none; border: 0; }
+    .current-panel > .card-header, .history-panel > .card-header { border: 0; margin: 0; padding: 4px 0 18px; }
+    :root .exercise-block { padding: 14px 12px; background: var(--surface); border-radius: 16px; }
+    :root .set-columns, :root .set-item { grid-template-columns: 36px minmax(0, 1fr) 10px minmax(0, 1fr) 30px; gap: 5px; }
+    .exercise-block > .flex:first-child > button { min-width: 36px; }
+    .panel-note { font-size: 10px; }
+    .session-actions { gap: 10px; }
+    .session-actions > :first-child { flex: .85; }
+    .modal-backdrop { align-items: flex-end; padding-top: 20px; }
+    :root .modal-content { width: 100%; max-width: none; border-radius: 24px 24px 0 0; padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: calc(var(--visual-height, 100dvh) - 24px); }
+    .modal-content::before { content: ''; display: block; width: 32px; height: 4px; background: var(--line); border-radius: 3px; margin: -12px auto 20px; }
+    .modal-backdrop { bottom: var(--keyboard-inset, 0px); }
+    #modal-actions .btn { flex: 1; }
+    :root .last-workout-tooltip { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); left: 20px; right: 20px; max-width: none; transform: none; animation: page-appear .2s; }
+    :root .last-workout-tooltip.fading { animation: none; opacity: 0; transition: opacity .2s; }
+}
+@media (max-width: 360px) {
+    :root .app-container { padding-left: 16px; padding-right: 16px; }
+    .shell-inner { padding-left: 16px; padding-right: 16px; }
+    :root .page-header { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+    :root .muscle-card { padding-left: 14px; padding-right: 14px; }
+    .page-header h1 { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

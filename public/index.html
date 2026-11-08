@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>健身追踪器</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#3a86ff">
@@ -1524,21 +1524,29 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/design.css">
 </head>
 <body>
-    <!-- Theme Toggle Button -->
-    <button class="theme-toggle" onclick="toggleTheme(event)" title="切换主题">
-        <i class="fas fa-sun" id="theme-icon"></i>
-    </button>
-
-    <!-- 版本号角标 -->
+    <header class="shell-header">
+        <div class="shell-inner">
+            <button class="brand" onclick="showHomePage()" aria-label="健身追踪器首页">
+                <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8v8M2 10v4M19 8v8M22 10v4M5 12h14"/></svg></span>
+                <span>健身追踪器<small>TRAIN. TRACK. REPEAT.</small></span>
+            </button>
+            <div class="shell-actions">
+                <div id="user-area" class="flex items-center gap-2"></div>
+                <span class="header-divider"></span>
+                <button class="theme-toggle" onclick="toggleTheme(event)" title="切换主题" aria-label="切换深色或浅色主题"><i class="fas fa-sun" id="theme-icon"></i></button>
+            </div>
+        </div>
+    </header>
     <div class="app-version" id="app-version"></div>
 
     <div class="app-container">
         <!-- 登录页面 -->
         <div id="login-page" class="page">
             <div class="login-page">
-                <div class="login-logo">🏋️</div>
+                <div class="login-logo"><i class="fas fa-dumbbell" aria-hidden="true"></i></div>
                 <h1 class="login-title">健身追踪器</h1>
                 <p class="login-subtitle">记录你的每一次训练，见证身体的变化</p>
                 <button class="login-btn" onclick="loginWithGithub()">
@@ -1569,62 +1577,47 @@
 
         <!-- 主页 -->
         <div id="home-page" class="page">
-            <div class="app-header">
-                <div class="flex items-center justify-between mb-2">
-                    <div></div>
-                    <div id="user-area" class="flex items-center gap-2">
-                        <!-- 登录按钮或用户头像会通过JS动态填充 -->
-                    </div>
-                </div>
-                <h1 class="app-title">健身追踪器</h1>
-                <p class="app-subtitle">记录你的每一次训练，见证身体的变化</p>
-                <!-- 手动同步按钮 + 状态显示 -->
-                <div class="flex justify-center mt-3">
-                    <button id="sync-button" onclick="manualSync()"
-                            class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-700/60 hover:bg-gray-600/60 border border-gray-600/50 text-sm text-gray-300 transition-colors">
-                        <i class="fas fa-sync-alt text-xs" id="sync-icon"></i>
-                        <span id="sync-status-text">点击同步</span>
-                    </button>
-                </div>
+            <div class="home-intro">
+                <div><p class="eyebrow"><span></span> 每一次训练，都算数</p>
+                <h1>今天<span class="heading-accent">练什么？</span></h1>
+                <p class="intro-copy">选择训练部位，开始记录你的进步。</p></div>
+                <button id="sync-button" onclick="manualSync()" class="sync-pill" title="同步训练记录">
+                    <i class="fas fa-sync-alt" id="sync-icon"></i><span id="sync-status-text">点击同步</span>
+                </button>
             </div>
-            
-            <div class="grid-container">
-                <div class="muscle-card" onclick="showTrainingPage('chest', '胸部训练')">
-                    <div class="muscle-icon">💪</div>
-                    <div class="muscle-name">胸 & 三头</div>
-                </div>
-                
-                <div class="muscle-card" onclick="showTrainingPage('back', '背部训练')">
-                    <div class="muscle-icon">🚀</div>
-                    <div class="muscle-name">背 & 二头</div>
-                </div>
-                
-                <div class="muscle-card" onclick="showTrainingPage('shoulders', '肩部训练')">
-                    <div class="muscle-icon">🏋️</div>
-                    <div class="muscle-name">肩部训练</div>
-                </div>
-                
-                <div class="muscle-card" onclick="showTrainingPage('legs', '腿部训练')">
-                    <div class="muscle-icon">🦵</div>
-                    <div class="muscle-name">腿部训练</div>
-                </div>
-                
-                <div class="muscle-card" onclick="showExerciseManagementPage()">
-                    <div class="muscle-icon">⚙️</div>
-                    <div class="muscle-name">动作管理</div>
-                </div>
-                
-                <div class="muscle-card" onclick="showWorkoutPlannerPage()">
-                    <div class="muscle-icon">📊</div>
-                    <div class="muscle-name">训练计划</div>
-                </div>
+            <div class="section-heading"><h2>开始训练</h2><span>选择你的训练部位</span></div>
+            <div class="grid-container training-choices">
+                <button class="muscle-card muscle-chest" onclick="showTrainingPage('chest', '胸部训练')">
+                    <span class="muscle-top"><span class="muscle-index">01</span><span class="card-arrow" aria-hidden="true">↗</span></span>
+                    <svg class="muscle-art" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 31h40M16 23v16M10 26v10M48 23v16M54 26v10M24 46h16M28 46v9M36 46v9"/><path d="M25 17c2-5 12-5 14 0"/></svg>
+                    <span class="muscle-name">胸 & 三头</span><span class="muscle-caption">CHEST / TRICEPS</span>
+                </button>
+                <button class="muscle-card muscle-back" onclick="showTrainingPage('back', '背部训练')">
+                    <span class="muscle-top"><span class="muscle-index">02</span><span class="card-arrow" aria-hidden="true">↗</span></span>
+                    <svg class="muscle-art" viewBox="0 0 64 64" aria-hidden="true"><path d="M26 9v7l-10 5c-5 3-7 9-7 15v9l7 2 4-16 3 10 1 14h16l1-14 3-10 4 16 7-2v-9c0-6-2-12-7-15l-10-5V9"/><path d="M26 16c3 3 9 3 12 0M20 24c4 1 8 4 12 9 4-5 8-8 12-9M23 33c2 6 5 10 9 12 4-2 7-6 9-12M32 25v20"/></svg>
+                    <span class="muscle-name">背 & 二头</span><span class="muscle-caption">BACK / BICEPS</span>
+                </button>
+                <button class="muscle-card muscle-shoulders" onclick="showTrainingPage('shoulders', '肩部训练')">
+                    <span class="muscle-top"><span class="muscle-index">03</span><span class="card-arrow" aria-hidden="true">↗</span></span>
+                    <svg class="muscle-art" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="22" r="6"/><path d="M24 52V36l-9-9V16M40 52V36l9-9V16M24 36h16M10 13h10M44 13h10M10 9v8M20 9v8M44 9v8M54 9v8"/></svg>
+                    <span class="muscle-name">肩部训练</span><span class="muscle-caption">SHOULDERS</span>
+                </button>
+                <button class="muscle-card muscle-legs" onclick="showTrainingPage('legs', '腿部训练')">
+                    <span class="muscle-top"><span class="muscle-index">04</span><span class="card-arrow" aria-hidden="true">↗</span></span>
+                    <svg class="muscle-art" viewBox="0 0 64 64" aria-hidden="true"><path d="M22 9h20l3 15c1 5-2 9-3 14l-1 13 4 5H34l-2-21-2 21H19l4-5-1-13c-1-5-4-9-3-14l3-15Z"/><path d="m20 22 12 3 12-3M32 25v10M24 29l2 8M40 29l-2 8M23 43h4M37 43h4"/></svg>
+                    <span class="muscle-name">腿部训练</span><span class="muscle-caption">LEGS</span>
+                </button>
             </div>
-            
-     
+            <div class="section-heading tools-heading"><h2>训练工具</h2><span>为每一次训练做好准备</span></div>
+            <div class="tools-grid">
+                <button class="tool-card" onclick="showExerciseManagementPage()"><span class="tool-icon"><i class="fas fa-sliders" aria-hidden="true"></i></span><span><strong>动作管理</strong><small>整理你的专属动作库</small></span><span class="tool-arrow" aria-hidden="true">→</span></button>
+                <button class="tool-card" onclick="showWorkoutPlannerPage()"><span class="tool-icon"><i class="fas fa-chart-simple" aria-hidden="true"></i></span><span><strong>训练计划</strong><small>循序渐进，向目标靠近</small></span><span class="tool-arrow" aria-hidden="true">→</span></button>
+            </div>
+            <footer class="home-footer"><span class="footer-line"></span><span>专注当下，进步自会发生。</span><span class="footer-line"></span></footer>
         </div>
 
         <!-- 训练页面 -->
-        <div id="training-page" class="page">
+        <div id="training-page" class="page" data-view="current">
             <div class="page-header mb-6">
                 <button onclick="showHomePage()" class="btn btn-action">
                     <i class="fas fa-arrow-left mr-2"></i> 返回
@@ -1633,29 +1626,33 @@
                 <div class="spacer"></div>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="card">
+            <div class="training-tabs" role="tablist" aria-label="训练记录视图">
+                <button id="current-tab" role="tab" aria-selected="true" aria-controls="current-panel" onclick="setTrainingView('current')">本次训练</button>
+                <button id="history-tab" role="tab" aria-selected="false" aria-controls="history-panel" tabindex="-1" onclick="setTrainingView('history')">历史记录</button>
+            </div>
+            <div class="training-layout">
+                <div class="card current-panel" id="current-panel" role="tabpanel" aria-labelledby="current-tab">
                     <div class="card-header">
-                        <h2 class="card-title"><i class="fas fa-dumbbell"></i> 记录今日训练</h2>
+                        <div><p class="eyebrow">WORKOUT LOG</p><h2 class="card-title">记录本次训练</h2></div><span class="panel-note">草稿自动保存</span>
                     </div>
                     
                     <div id="current-session-container" class="space-y-4 mb-4">
                         <!-- 动态内容 -->
                     </div>
                     
-                    <div class="flex flex-wrap gap-3 mt-6">
-                        <button onclick="addExerciseToSession()" class="btn btn-primary flex-1">
+                    <div class="session-actions">
+                        <button onclick="addExerciseToSession()" class="btn btn-action flex-1">
                             <i class="fas fa-plus mr-2"></i> 添加动作
                         </button>
-                        <button id="save-session-button" onclick="saveSession()" class="btn btn-secondary flex-1">
-                            <i class="fas fa-save mr-2"></i> 完成训练
+                        <button id="save-session-button" onclick="saveSession()" class="btn btn-primary flex-1">
+                            <i class="fas fa-check mr-2"></i> 完成训练
                         </button>
                     </div>
                 </div>
                 
-                <div class="card">
+                <div class="card history-panel" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
                     <div class="card-header">
-                        <h2 class="card-title"><i class="fas fa-history"></i> 历史记录</h2>
+                        <div><p class="eyebrow">YOUR PROGRESS</p><h2 class="card-title">历史记录</h2></div><i class="fas fa-clock-rotate-left history-heading-icon" aria-hidden="true"></i>
                     </div>
                     
                     <div id="history-container" class="space-y-4">
@@ -1685,7 +1682,7 @@
                 <h2 class="card-title"><i class="fas fa-dumbbell"></i> 选择肌肉群</h2>
             </div>
             
-            <select id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)" 
+            <select aria-label="选择肌肉群" id="manage-muscle-select" onchange="loadExercisesForManagement(this.value)"
                     class="w-full mb-4 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
                 <option value="">-- 请选择肌肉群 --</option>
                 <option value="chest">胸 & 三头</option>
@@ -1697,7 +1694,7 @@
             <div class="mt-6">
                 <h3 class="text-lg font-semibold mb-3 text-gray-300 text-center">添加动作</h3>
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <input type="text" id="new-exercise-input" placeholder="动作名称" 
+                    <input type="text" id="new-exercise-input" aria-label="新动作名称" placeholder="动作名称"
                            class="flex-1 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
                     <button onclick="addNewExercise()" class="btn btn-primary sm:w-auto w-full">
                         <i class="fas fa-plus mr-1"></i> 添加
@@ -1730,7 +1727,7 @@
         </div>
         
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
-            <input type="text" id="new-common-exercise-input" placeholder="新公用动作名称" 
+            <input type="text" id="new-common-exercise-input" aria-label="新公用动作名称" placeholder="新公用动作名称"
                    class="flex-1 bg-gray-800 border border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white">
             <button onclick="addCommonExercise()" class="btn btn-secondary sm:w-auto w-full">
                 <i class="fas fa-plus mr-1"></i> 添加公用动作
@@ -1763,7 +1760,7 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="workout-label block text-gray-300 mb-2">目标重量 (kg)</label>
+                            <label for="target-weight" class="workout-label block text-gray-300 mb-2">目标重量 (kg)</label>
                             <input type="number" id="target-weight" placeholder="例如: 100" 
                                    class="w-full bg-gray-800 border border-gray-600 rounded-xl p-3 text-white text-lg"
                                    oninput="calculateWorkoutPlan()">
@@ -1816,7 +1813,9 @@
         </div>
     </div>
 
-    <!-- JavaScript部分保持不变 -->
+    <script src="/ui.js"></script>
+
+    <!-- 训练与同步逻辑 -->
     <script>
         const API_BASE_URL = '';
         // 版本号：占位符由 scripts/deploy-frontend.js 在部署时替换为 v{version}-{git短hash}；本地开发显示 dev
@@ -2467,6 +2466,9 @@
         const pages = document.querySelectorAll('.page');
         function showPage(pageId) {
             pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+            document.body.dataset.page = pageId;
+            if (pageId === 'training-page') setTrainingView('current');
+            window.scrollTo(0, 0);
         }
 
         function showHomePage() {
@@ -2913,11 +2915,11 @@
                             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
-                                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                                    <select aria-label="训练动作" class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                                     <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select);" class="text-blue-400 hover:text-blue-300 p-1" title="查看上次训练"><i class="fas fa-history"></i></button>
-                                    <button onclick="removeExerciseBlock(this)" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
+                                    <button onclick="removeExerciseBlock(this)" aria-label="移除动作" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
-                                <div class="sets-container mt-3 space-y-2"></div>
+                                <div class="set-columns" aria-hidden="true"><span>组数</span><span>重量 <small>kg</small></span><span></span><span>次数</span><span></span></div><div class="sets-container mt-3 space-y-2"></div>
                                 <div class="flex gap-2 mt-2">
                                     <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
                                     <button onclick="addMultipleSetsToExercise('${exerciseId}', 3);" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
@@ -2971,10 +2973,10 @@
                                 setDiv.className = 'set-item flex items-center gap-2';
                                 setDiv.innerHTML = `
                                     <span class="text-gray-400 w-12 text-sm">第${i + 1}组</span>
-                                    <input type="text" placeholder="重量(kg)" value="${set.weight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <input type="text" aria-label="重量（kg），支持横杠分隔超级组" placeholder="—" value="${set.weight}" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
                                     <span class="text-gray-500">x</span>
-                                    <input type="text" placeholder="次数" value="${set.reps}" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
-                                    <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                                    <input type="text" aria-label="次数，支持横杠分隔超级组" placeholder="—" value="${set.reps}" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                                    <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" aria-label="移除这一组" class="text-red-600 p-1 text-lg">×</button>
                                 `;
                                 setsContainer.appendChild(setDiv);
                             });
@@ -3303,11 +3305,11 @@
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <select class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
+                    <select aria-label="训练动作" class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
                     <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select);" class="text-blue-400 hover:text-blue-300 p-1" title="查看上次训练"><i class="fas fa-history"></i></button>
-                    <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
+                    <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" aria-label="移除动作" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
-                <div class="sets-container mt-3 space-y-2"></div>
+                <div class="set-columns" aria-hidden="true"><span>组数</span><span>重量 <small>kg</small></span><span></span><span>次数</span><span></span></div><div class="sets-container mt-3 space-y-2"></div>
                 <div class="flex gap-2 mt-2">
                     <button onclick="addSetToExercise('${exerciseId}'); saveSessionToLocalStorage();" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加一组</button>
                     <button onclick="addMultipleSetsToExercise('${exerciseId}', 3);" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
@@ -3390,10 +3392,10 @@
             setDiv.className = 'set-item flex items-center gap-2';
             setDiv.innerHTML = `
                 <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                <input type="text" placeholder="重量(kg)" value="${defaultWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                <input type="text" aria-label="重量（kg），支持横杠分隔超级组" placeholder="—" value="${defaultWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                 <span class="text-gray-500">x</span>
-                <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
-                <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                <input type="text" aria-label="次数，支持横杠分隔超级组" placeholder="—" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" aria-label="移除这一组" class="text-red-600 p-1 text-lg">×</button>
             `;
             setsContainer.appendChild(setDiv);
             saveSessionToLocalStorage(); // 添加新组后保存
@@ -3425,10 +3427,10 @@
                     setDiv.className = 'set-item flex items-center gap-2';
                     setDiv.innerHTML = `
                         <span class="text-gray-400 w-12 text-sm">第${setCount}组</span>
-                        <input type="text" placeholder="重量(kg)" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
+                        <input type="text" aria-label="重量（kg），支持横杠分隔超级组" placeholder="—" value="${finalWeight}" inputmode="decimal" class="set-weight w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" onfocus="if(this.value) this.dataset.prevValue=this.value; this.value='';" onblur="if(!this.value && this.dataset.prevValue) this.value=this.dataset.prevValue;" oninput="saveSessionToLocalStorage()">
                         <span class="text-gray-500">x</span>
-                        <input type="text" placeholder="次数" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
-                        <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" class="text-red-600 p-1 text-lg">×</button>
+                        <input type="text" aria-label="次数，支持横杠分隔超级组" placeholder="—" inputmode="numeric" class="set-reps w-full bg-gray-900 rounded p-2 text-center focus:outline-none focus:ring-1 focus:ring-blue-400" oninput="saveSessionToLocalStorage()">
+                        <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" aria-label="移除这一组" class="text-red-600 p-1 text-lg">×</button>
                     `;
                     setsContainer.appendChild(setDiv);
                 }
@@ -3455,7 +3457,7 @@
             if (exerciseBlocks.length === 0) {
                 showModal('提示', '请至少添加一个训练动作。');
                 saveButton.disabled = false; // Re-enable button
-                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                saveButton.textContent = '✓ 完成训练'; // Restore button text
                 saveButton.classList.remove('bg-gray-500');
                 saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                 return;
@@ -3467,7 +3469,7 @@
                 if (!exerciseName || exerciseName === 'add_new') {
                     showModal('错误', '请为所有动作选择一个有效的名称。');
                     saveButton.disabled = false; // Re-enable button
-                    saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                    saveButton.textContent = '✓ 完成训练'; // Restore button text
                     saveButton.classList.remove('bg-gray-500');
                     saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                     return;
@@ -3486,7 +3488,7 @@
                     if (i === 0 && !weight) { 
                         showModal('错误', `动作 "${exerciseName}" 的第一组重量是必填项！`); 
                         saveButton.disabled = false; // Re-enable button
-                        saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                        saveButton.textContent = '✓ 完成训练'; // Restore button text
                         saveButton.classList.remove('bg-gray-500');
                         saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                         return; 
@@ -3494,7 +3496,7 @@
                     if (!reps) { 
                         showModal('错误', `动作 "${exerciseName}" 的第 ${i+1} 组次数不能为空！`); 
                         saveButton.disabled = false; // Re-enable button
-                        saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                        saveButton.textContent = '✓ 完成训练'; // Restore button text
                         saveButton.classList.remove('bg-gray-500');
                         saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                         return; 
@@ -3528,7 +3530,7 @@
             if (exercisesData.length === 0) {
                 showModal('提示', '没有有效的训练数据可以保存。');
                 saveButton.disabled = false; // Re-enable button
-                saveButton.textContent = '✓ 完成并保存本次训练'; // Restore button text
+                saveButton.textContent = '✓ 完成训练'; // Restore button text
                 saveButton.classList.remove('bg-gray-500');
                 saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
                 return;
@@ -3552,7 +3554,7 @@
             localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // 草稿已在保存前清除，这里兜底
             loadHistory(); // 重新加载历史记录
             saveButton.disabled = false;
-            saveButton.textContent = '✓ 完成并保存本次训练';
+            saveButton.textContent = '✓ 完成训练';
             saveButton.classList.remove('bg-gray-500');
             saveButton.classList.add('bg-green-600', 'hover:bg-green-500');
         }
@@ -3627,7 +3629,7 @@
                         <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
                             <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
                                 <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
-                                <button onclick="deleteSession('${session.uid}')" class="text-gray-500 hover:text-red-400 text-xl">🗑️</button>
+                                <button onclick="deleteSession('${session.uid}')" aria-label="删除训练记录" class="history-delete text-gray-500 hover:text-red-400 text-xl"><i class="fas fa-trash-can" aria-hidden="true"></i></button>
                             </div>
                             <div class="space-y-3">
                     `;

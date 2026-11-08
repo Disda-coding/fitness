@@ -7,6 +7,7 @@
     "hono": "^4.13.8"
   },
   "scripts": {
+    "dev": "node scripts/dev.js",
     "test": "node --test",
     "check": "node --check src/index.js && node --check scripts/deploy-frontend.js && npm test",
     "deploy:frontend": "node scripts/deploy-frontend.js",
