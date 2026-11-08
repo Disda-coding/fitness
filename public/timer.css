@@ -1,0 +1,63 @@
+/* One timer, three presentations. The normal-flow card keeps its space when stowed. */
+.interval-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 116px; margin: 4px 0 20px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.interval-face { display: flex; flex-direction: column; flex-shrink: 0; }
+.interval-label { font-size: 11px; color: var(--muted); letter-spacing: .8px; }
+.interval-label i { margin-right: 5px; color: var(--primary); }
+.interval-face strong { font-size: 34px; line-height: 1.3; font-weight: 650; letter-spacing: 1px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.interval-context { display: flex; flex-direction: column; text-align: right; gap: 6px; min-width: 0; }
+.interval-context > span { font-size: 12px; overflow-wrap: anywhere; }
+.interval-context small { font-size: 10px; color: var(--muted); }
+.interval-card > * { transition: opacity .2s, transform .2s; }
+.interval-card.timer-stowed > * { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+.interval-mini { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink); animation: timer-appear .2s ease-out; font-variant-numeric: tabular-nums; }
+.interval-mini[hidden] { display: none !important; }
+.interval-mini > span { font-size: 11px; }
+.interval-mini strong { font-size: 19px; line-height: 1.2; letter-spacing: .5px; }
+.timer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+#interval-header { flex-direction: column; gap: 1px; min-width: 66px; min-height: 44px; padding: 3px 8px; background: var(--blue-soft); border-radius: 11px; }
+#interval-header > span { font-size: 9px; color: var(--primary); }
+#interval-header strong { font-size: 15px; }
+#interval-capsule { position: fixed; top: calc(var(--timer-edge, 68px) + 8px); left: 50%; transform: translateX(-50%); z-index: 101; min-height: 38px; width: max-content; max-width: calc(100% - 32px); padding: 8px 18px; border-radius: 24px; background: var(--blue-soft); border: 1px solid var(--line); box-shadow: 0 3px 12px #0000000a; animation: timer-capsule-in .2s ease-out; pointer-events: none; }
+body[data-page="training-page"][data-timer-skin="capsule"] .shell-header { padding-bottom: 48px; }
+body[data-page="training-page"][data-timer-skin="capsule"]:not([data-timer-placement="capsule"]) .shell-header::after { content: '组间计时 · 记录下一组时自动更新'; position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 11px; white-space: nowrap; }
+/* The capsule occupies the reserved bottom band of the header, outside input space. */
+body[data-timer-skin="capsule"] #interval-capsule { top: calc(var(--timer-edge, 116px) - 44px); }
+body[data-timer-skin="capsule"] .interval-card { background: var(--blue-soft); }
+body[data-timer-skin="capsule"] .interval-face strong { color: var(--primary); }
+body[data-timer-skin="dock"] .interval-card { border-left: 3px solid var(--primary); }
+#interval-dock { grid-column: 1 / -1; padding: 6px 12px 12px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+#interval-dock strong { margin-left: auto; }
+.set-recorded > span:first-child { color: #45866c !important; font-weight: 600; }
+.set-recorded > span:first-child::after { content: ' ✓'; font-size: 10px; }
+.set-interval { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.timer-demo-picker { margin: 0 0 16px; }
+.timer-demo-picker > p { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.timer-demo-picker > div { display: flex; gap: 6px; padding: 4px; border-radius: 12px; background: var(--surface-soft); }
+.timer-demo-picker button { flex: 1; min-height: 44px; padding: 8px 4px; font-size: 12px; border-radius: 9px; color: var(--muted); background: none; }
+.timer-demo-picker button[aria-pressed="true"] { background: var(--surface); color: var(--primary); box-shadow: 0 1px 5px #00000008; font-weight: 600; }
+@keyframes timer-appear { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes timer-capsule-in { from { opacity: 0; translate: 0 -6px; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 1023px) {
+    .session-actions { display: grid; grid-template-columns: .85fr 1fr; }
+    body[data-timer-skin="dock"] #training-page { padding-bottom: 150px; }
+    body[data-timer-placement="dock"] #training-page[data-view="history"] .session-actions { display: none; }
+    body[data-timer-placement="dock"] #training-page[data-view="history"] #interval-dock { display: none; }
+}
+@media (max-width: 640px) {
+    .interval-card { min-height: 108px; padding: 16px; border-radius: 16px; gap: 12px; margin-bottom: 16px; }
+    .interval-face strong { font-size: 31px; }
+    .interval-context > span { font-size: 11px; }
+    .interval-context small { font-size: 10px; max-width: 160px; }
+    body[data-timer-placement="header"] .shell-actions { gap: 4px; }
+    body[data-timer-placement="header"] .demo-reset { display: none; }
+    body[data-timer-placement="header"] #mobile-page-title { left: 40%; max-width: 70px; font-size: 15px; }
+    body[data-timer-placement="header"] .shell-inner { gap: 4px; }
+    #interval-header { min-width: 63px; }
+}
+@media (min-width: 641px) {
+    body[data-page="training-page"][data-timer-skin="capsule"] .page-header { top: calc(130px + env(safe-area-inset-top, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .interval-mini, #interval-capsule { animation: none; }
+    .interval-card > * { transition: none; }
+}

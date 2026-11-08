@@ -6,6 +6,7 @@ function setTrainingView(view) {
         tab.setAttribute('aria-selected', String(selected));
         tab.tabIndex = selected ? 0 : -1;
     });
+    window.setTimer?.refresh();
 }
 
 document.querySelector('.training-tabs').addEventListener('keydown', event => {

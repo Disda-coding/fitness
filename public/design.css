@@ -51,6 +51,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .brand-mark svg { width: 27px; height: 27px; }
 .brand small { display: block; font-size: 8px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
 .shell-actions { display: flex; align-items: center; gap: 16px; }
+.shell-context { display: none; }
 .header-divider { height: 20px; width: 1px; background: var(--line); }
 :root .theme-toggle, :root .theme-toggle:hover {
     position: static; width: 40px; height: 44px; flex-shrink: 0; font-size: 17px;
@@ -123,6 +124,25 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .history-heading-icon { color: var(--muted); }
 :root .exercise-block { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: none; backdrop-filter: none; }
 .exercise-block > .flex:first-child { gap: 4px; }
+.last-workout-reference { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.last-workout-reference summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 9px 12px; cursor: pointer; list-style: none; }
+.last-workout-reference summary::-webkit-details-marker { display: none; }
+.last-workout-reference summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 10px; }
+.reference-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 10px; min-width: 0; }
+.reference-label { color: var(--muted); font-size: 11px; }
+.reference-overview { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.reference-toggle { color: var(--primary); font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.reference-toggle::after { content: '查看'; }
+.last-workout-reference[open] .reference-toggle::after { content: '收起'; }
+.reference-body { padding: 8px 12px 10px; border-top: 1px solid var(--line); }
+.reference-meta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.reference-sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; max-height: 92px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.reference-sets:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.reference-set { display: flex; align-items: baseline; gap: 6px; min-height: 28px; padding: 4px 0; font-size: 12px; font-variant-numeric: tabular-nums; min-width: 0; }
+.reference-set > :last-child { overflow-wrap: anywhere; }
+.reference-superset { grid-column: 1 / -1; }
+.reference-number { flex-shrink: 0; color: var(--muted); font-size: 10px; min-width: 14px; }
+.reference-empty { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
 .exercise-block > .flex:first-child > button { min-width: 42px; min-height: 44px; color: var(--muted); border-radius: 9px; }
 :root .exercise-select { background-color: var(--surface-soft); font-size: 15px; font-weight: 600; padding-left: 12px; flex: 1; width: 0; }
 :root .set-columns, :root .set-item { display: grid; grid-template-columns: 38px minmax(0, 1fr) 10px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
@@ -173,7 +193,15 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
     body.keyboard-open .session-actions { display: none; }
 }
 @media (max-width: 640px) {
-    .shell-inner { height: 68px; padding: 0 20px; gap: 8px; }
+    .shell-inner { position: relative; height: 68px; padding: 0 20px; gap: 8px; }
+    body[data-page]:not([data-page="home-page"]) .brand,
+    body[data-page]:not([data-page="home-page"]) #user-area { display: none; }
+    body[data-page]:not([data-page="home-page"]) .shell-context { display: flex; align-items: center; flex: 1; min-width: 0; }
+    .shell-back { min-height: 44px; min-width: 56px; display: flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--ink); font-size: 13px; cursor: pointer; }
+    .shell-back > span { font-size: 20px; }
+    #mobile-page-title { position: absolute; left: 50%; transform: translateX(-50%); max-width: calc(100% - 160px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; font-weight: 650; pointer-events: none; }
+    :root .page-header { display: none; }
+    #training-page, #exercise-management-page, #workout-planner-page { padding-top: 16px; }
     .brand { gap: 9px; font-size: 14px; }
     .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
     .brand-mark svg { width: 23px; height: 23px; }
@@ -226,8 +254,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
     .modal-content::before { content: ''; display: block; width: 32px; height: 4px; background: var(--line); border-radius: 3px; margin: -12px auto 20px; }
     .modal-backdrop { bottom: var(--keyboard-inset, 0px); }
     #modal-actions .btn { flex: 1; }
-    :root .last-workout-tooltip { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); left: 20px; right: 20px; max-width: none; transform: none; animation: page-appear .2s; }
-    :root .last-workout-tooltip.fading { animation: none; opacity: 0; transition: opacity .2s; }
 }
 @media (max-width: 360px) {
     :root .app-container { padding-left: 16px; padding-right: 16px; }

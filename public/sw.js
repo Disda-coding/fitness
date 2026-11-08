@@ -1,5 +1,5 @@
 // Service Worker: 健身追踪器 PWA 离线支持
-const CACHE_NAME = 'fitness-tracker-v11';
+const CACHE_NAME = 'fitness-tracker-v13';
 
 // 预缓存的应用外壳资源
 const PRECACHE_URLS = [
@@ -7,6 +7,9 @@ const PRECACHE_URLS = [
   '/index.html',
   '/design.css',
   '/ui.js',
+  '/timer.css',
+  '/timing-core.js',
+  '/set-timer.js',
   '/manifest.json',
   '/sw.js',
   '/icon.svg',

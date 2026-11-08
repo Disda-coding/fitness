@@ -1,6 +1,6 @@
 {
   "name": "fitness-tracker",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -8,8 +8,9 @@
   },
   "scripts": {
     "dev": "node scripts/dev.js",
+    "dev:demo": "node scripts/dev.js --demo",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check scripts/deploy-frontend.js && npm test",
+    "check": "node --check src/index.js && node --check scripts/deploy-frontend.js && node --check public/ui.js && node --check public/set-timer.js && node --check public/timing-core.js && node --check scripts/demo.js && npm test",
     "deploy:frontend": "node scripts/deploy-frontend.js",
     "deploy:backend": "wrangler deploy",
     "migrate:d1": "wrangler d1 execute fitness-data --remote --file=Schema.sql",

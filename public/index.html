@@ -1215,124 +1215,6 @@
             background: #ffffff;
         }
         
-        /* Last workout tooltip */
-        .last-workout-tooltip {
-            position: fixed;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(58, 134, 255, 0.3);
-            border-radius: 12px;
-            padding: 12px 16px;
-            z-index: 1000;
-            max-width: 280px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            animation: tooltipFadeIn 0.3s ease-out;
-            pointer-events: none;
-        }
-        
-        @keyframes tooltipFadeIn {
-            from { opacity: 0; transform: translateY(-50%) translateX(20px); }
-            to { opacity: 1; transform: translateY(-50%) translateX(0); }
-        }
-        
-        @keyframes tooltipFadeOut {
-            from { opacity: 1; transform: translateY(-50%) translateX(0); }
-            to { opacity: 0; transform: translateY(-50%) translateX(20px); }
-        }
-        
-        .last-workout-tooltip.fading {
-            animation: tooltipFadeOut 0.3s ease-in forwards;
-        }
-        
-        .last-workout-tooltip .tooltip-header {
-            font-size: 0.85rem;
-            color: #3a86ff;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        
-        .last-workout-tooltip .tooltip-date {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-bottom: 8px;
-        }
-        
-        .last-workout-tooltip .tooltip-set {
-            font-size: 0.9rem;
-            color: #e2e8f0;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(74, 85, 104, 0.3);
-        }
-        
-        .last-workout-tooltip .tooltip-set:last-child {
-            border-bottom: none;
-        }
-        
-        .last-workout-tooltip .tooltip-set span {
-            color: #94a3b8;
-        }
-        
-        [data-theme="light"] .last-workout-tooltip {
-            background: rgba(255, 255, 255, 0.95);
-            border: 0.5px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        }
-        
-        [data-theme="light"] .last-workout-tooltip .tooltip-header {
-            color: #007aff;
-        }
-        
-        [data-theme="light"] .last-workout-tooltip .tooltip-date {
-            color: rgba(60, 60, 67, 0.6);
-        }
-        
-        [data-theme="light"] .last-workout-tooltip .tooltip-set {
-            color: #1c1c1e;
-            border-bottom-color: rgba(0, 0, 0, 0.08);
-        }
-        
-        [data-theme="light"] .last-workout-tooltip .tooltip-set span {
-            color: rgba(60, 60, 67, 0.8);
-        }
-        
-        @media (min-width: 1024px) {
-            .last-workout-tooltip {
-                right: auto;
-                left: 50%;
-                transform: translateX(-50%) translateY(-50%);
-                top: 35%;
-                max-width: 320px;
-                padding: 16px 20px;
-            }
-
-            @keyframes tooltipFadeIn {
-                from { opacity: 0; transform: translateX(-50%) translateY(-50%) scale(0.95); }
-                to { opacity: 1; transform: translateX(-50%) translateY(-50%) scale(1); }
-            }
-
-            @keyframes tooltipFadeOut {
-                from { opacity: 1; transform: translateX(-50%) translateY(-50%) scale(1); }
-                to { opacity: 0; transform: translateX(-50%) translateY(-50%) scale(0.95); }
-            }
-
-            .last-workout-tooltip .tooltip-header {
-                font-size: 0.9rem;
-            }
-
-            .last-workout-tooltip .tooltip-date {
-                font-size: 0.8rem;
-            }
-
-            .last-workout-tooltip .tooltip-set {
-                font-size: 0.95rem;
-                padding: 6px 0;
-            }
-        }
-
         /* Login Page */
         .login-page {
             display: flex;
@@ -1525,6 +1407,7 @@
         }
     </style>
     <link rel="stylesheet" href="/design.css">
+    <link rel="stylesheet" href="/timer.css">
 </head>
 <body>
     <header class="shell-header">
@@ -1533,13 +1416,19 @@
                 <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8v8M2 10v4M19 8v8M22 10v4M5 12h14"/></svg></span>
                 <span>健身追踪器<small>TRAIN. TRACK. REPEAT.</small></span>
             </button>
+            <div class="shell-context">
+                <button class="shell-back" onclick="showHomePage()" aria-label="返回首页"><span aria-hidden="true">←</span> 返回</button>
+                <h1 id="mobile-page-title"></h1>
+            </div>
             <div class="shell-actions">
+                <div id="interval-header" class="interval-mini" role="timer" aria-live="off" aria-label="组间时间" hidden><span>组间</span><strong data-interval-time>--:--</strong></div>
                 <div id="user-area" class="flex items-center gap-2"></div>
                 <span class="header-divider"></span>
                 <button class="theme-toggle" onclick="toggleTheme(event)" title="切换主题" aria-label="切换深色或浅色主题"><i class="fas fa-sun" id="theme-icon"></i></button>
             </div>
         </div>
     </header>
+    <div id="interval-capsule" class="interval-mini" role="timer" aria-live="off" aria-label="组间时间" hidden><span class="timer-dot"></span><span>组间时间</span><strong data-interval-time>--:--</strong></div>
     <div class="app-version" id="app-version"></div>
 
     <div class="app-container">
@@ -1626,6 +1515,10 @@
                 <div class="spacer"></div>
             </div>
             
+            <div id="interval-card" class="interval-card">
+                <div class="interval-face"><span class="interval-label"><i class="fas fa-stopwatch" aria-hidden="true"></i> 组间时间</span><strong data-interval-time role="timer" aria-live="off">--:--</strong></div>
+                <div class="interval-context"><span id="interval-detail" aria-live="polite">填好次数并结束编辑，即开始计时</span><small id="interval-previous">每次记录之间的时间，包含休息与训练</small></div>
+            </div>
             <div class="training-tabs" role="tablist" aria-label="训练记录视图">
                 <button id="current-tab" role="tab" aria-selected="true" aria-controls="current-panel" onclick="setTrainingView('current')">本次训练</button>
                 <button id="history-tab" role="tab" aria-selected="false" aria-controls="history-panel" tabindex="-1" onclick="setTrainingView('history')">历史记录</button>
@@ -1641,6 +1534,7 @@
                     </div>
                     
                     <div class="session-actions">
+                        <div id="interval-dock" class="interval-mini" role="timer" aria-live="off" aria-label="组间时间" hidden><span class="timer-dot"></span><span>组间时间</span><strong data-interval-time>--:--</strong></div>
                         <button onclick="addExerciseToSession()" class="btn btn-action flex-1">
                             <i class="fas fa-plus mr-2"></i> 添加动作
                         </button>
@@ -1814,6 +1708,7 @@
     </div>
 
     <script src="/ui.js"></script>
+    <script type="module" src="/set-timer.js"></script>
 
     <!-- 训练与同步逻辑 -->
     <script>
@@ -2467,8 +2362,11 @@
         function showPage(pageId) {
             pages.forEach(page => page.classList.toggle('active', page.id === pageId));
             document.body.dataset.page = pageId;
+            const pageHeading = document.getElementById(pageId)?.querySelector('.page-header h1');
+            document.getElementById('mobile-page-title').textContent = pageHeading?.textContent || (pageId === 'login-page' ? '登录' : '健身追踪器');
             if (pageId === 'training-page') setTrainingView('current');
             window.scrollTo(0, 0);
+            window.setTimer?.navigationChanged();
         }
 
         function showHomePage() {
@@ -2498,6 +2396,7 @@
             
             // 4. 加载历史记录
             await loadHistory();
+            window.setTimer?.refresh();
         }
 
         async function showExerciseManagementPage() {
@@ -2843,7 +2742,8 @@
         }
 
         // --- 格式化显示辅助函数 ---
-        function formatSetDisplay(set, index) {
+        function formatSetDisplay(set, index, exerciseName, exercises) {
+            const interval = window.setTimer?.historySuffix(set, exerciseName, exercises) || "";
             const weight = set.weight;
             const reps = set.reps;
             const isSuperSet = (typeof weight === 'string' && weight.includes('-')) || (typeof reps === 'string' && reps.includes('-'));
@@ -2852,14 +2752,15 @@
                 // 超级组：用特殊样式显示
                 const weightStr = typeof weight === 'string' ? weight : String(weight);
                 const repsStr = typeof reps === 'string' ? reps : String(reps);
-                return `<span class="superset-badge">超级组</span> <span>${weightStr}kg</span> × <span>${repsStr}次</span>`;
+                return `<span class="superset-badge">超级组</span> <span>${weightStr}kg</span> × <span>${repsStr}次</span>${interval}`;
             } else {
-                return `<span>第${index + 1}组: ${weight}kg</span> × <span>${reps}次</span>`;
+                return `<span>第${index + 1}组: ${weight}kg</span> × <span>${reps}次</span>${interval}`;
             }
         }
 
         // --- LocalStorage 数据管理 ---
         function saveSessionToLocalStorage() {
+            window.setTimer?.refresh();
             const exerciseBlocks = document.querySelectorAll('#current-session-container .exercise-block');
             const exercisesData = []; // 用于存储要保存的训练数据
 
@@ -2876,7 +2777,8 @@
                         const repsInput = setEl.querySelector('.set-reps');
                         setsData.push({
                             weight: weightInput ? weightInput.value : '', // 保存当前输入值
-                            reps: repsInput ? repsInput.value : ''
+                            reps: repsInput ? repsInput.value : '',
+                            ...(window.setTimer?.fieldsFor(setEl) || {})
                         });
                     });
                     exercisesData.push({ exercise_name: exerciseName, sets_data: setsData });
@@ -2916,7 +2818,7 @@
                             exerciseDiv.innerHTML = `
                                 <div class="flex items-center gap-2">
                                     <select aria-label="训练动作" class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
-                                    <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select);" class="text-blue-400 hover:text-blue-300 p-1" title="查看上次训练"><i class="fas fa-history"></i></button>
+                                    <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select, true);" class="text-blue-400 hover:text-blue-300 p-1" title="展开上次训练参考" aria-label="展开上次训练参考"><i class="fas fa-history"></i></button>
                                     <button onclick="removeExerciseBlock(this)" aria-label="移除动作" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                                 </div>
                                 <div class="set-columns" aria-hidden="true"><span>组数</span><span>重量 <small>kg</small></span><span></span><span>次数</span><span></span></div><div class="sets-container mt-3 space-y-2"></div>
@@ -2961,7 +2863,7 @@
                             }
                             selectElement.value = exercise.exercise_name; // 设置为上次保存的动作名
                             
-                            // 显示上次训练浮窗
+                            // 显示上次训练参考
                             if (exercise.exercise_name) {
                                 fetchAndShowLastWorkout(selectElement);
                             }
@@ -2979,6 +2881,7 @@
                                     <button onclick="this.parentElement.remove(); updateSetNumbers('${exerciseId}'); saveSessionToLocalStorage();" aria-label="移除这一组" class="text-red-600 p-1 text-lg">×</button>
                                 `;
                                 setsContainer.appendChild(setDiv);
+                                window.setTimer?.restoreRow(setDiv, set);
                             });
                         });
                         return true; // 数据加载成功
@@ -3081,7 +2984,7 @@
                     select.value = currentValue; // 恢复之前选中的值
                 } else if (availableExercises.length > 0) {
                     select.value = availableExercises[0]; // 默认选择第一个
-                    // 显示上次训练浮窗
+                    // 显示上次训练参考
                     fetchAndShowLastWorkout(select);
                 } else {
                     select.value = ''; // 如果没有可用动作，则设置为空
@@ -3134,29 +3037,27 @@
                 // 添加动作/手动切换动作时：自动填入上次重量到第一组（仅第一组且次数为空时，详见函数内规则）
                 autoFillFirstWeightFromLast(selectElement);
             } else {
-                hideLastWorkoutTooltip();
+                hideLastWorkoutReference(selectElement);
             }
         }
         
-        // --- 上次训练数据提示窗 ---
-        let tooltipTimeout = null;
-        let lastWorkoutData = null;
-        let fetchTooltipTimer = null; // 防抖定时器
-        let suppressTooltip = false; // 用于控制是否显示浮窗的标志
+        // 每个动作独立加载参考，避免多个动作互相取消请求。
+        const lastWorkoutRequests = new WeakMap();
+        let suppressTooltip = false; // 保存后重建空表单时，保持原有的抑制策略
         
         // 查询某个动作的上次训练记录（离线优先：本地空时回退到云端 API）
-        // 供"查看历史浮窗"和"添加动作时自动填入重量"复用
-        async function getLastWorkoutData(exerciseName) {
+        // 供内嵌历史参考和添加动作时自动填入重量复用
+        async function getLastWorkoutData(exerciseName, muscleGroup = currentMuscleGroup) {
             if (!exerciseName || exerciseName === 'add_new') return null;
             // 1. 离线优先：从本设备 localStorage 查询
-            let data = workoutStore.lastWorkoutOf(currentMuscleGroup, exerciseName);
+            let data = workoutStore.lastWorkoutOf(muscleGroup, exerciseName);
             // 2. 本地空时回退到云端 API 查询（需在线且已登录）
             //    场景：换设备/首次使用，云端有历史但本设备没有
             if ((!data || !data.sets_data || data.sets_data.length === 0)
                 && navigator.onLine && currentUser && !currentUser.offline) {
                 try {
                     const resp = await apiFetch(
-                        `${API_BASE_URL}/last-workout/${encodeURIComponent(currentMuscleGroup)}/${encodeURIComponent(exerciseName)}`
+                        `${API_BASE_URL}/last-workout/${encodeURIComponent(muscleGroup)}/${encodeURIComponent(exerciseName)}`
                     );
                     if (resp.ok) {
                         const remote = await resp.json();
@@ -3172,34 +3073,42 @@
             return data;
         }
 
-        function fetchAndShowLastWorkout(selectElement) {
+        function fetchAndShowLastWorkout(selectElement, expand = false) {
+            if (suppressTooltip) return;
             const exerciseName = selectElement.value;
+            const muscleGroup = currentMuscleGroup;
+            const block = selectElement.closest('.exercise-block');
+            if (!block) return;
 
-            // 如果设置了抑制标志，不显示浮窗
-            if (suppressTooltip) {
+            const previousRequest = lastWorkoutRequests.get(selectElement);
+            if (previousRequest) clearTimeout(previousRequest.timer);
+            const request = { timer: null };
+            lastWorkoutRequests.set(selectElement, request);
+            const reference = block.querySelector('.last-workout-reference');
+            if (reference && reference.dataset.exercise !== exerciseName) {
+                reference.cancelAutoCollapse?.();
+                reference.remove();
+            }
+            if (!exerciseName || exerciseName === 'add_new') {
+                hideLastWorkoutReference(selectElement);
                 return;
             }
 
-            // 防抖：清除之前的定时器
-            if (fetchTooltipTimer) {
-                clearTimeout(fetchTooltipTimer);
-            }
-
-            // 延迟执行，避免 onclick 和 onchange 重复触发
-            fetchTooltipTimer = setTimeout(async () => {
-                // 仅查看上次历史，不修改/覆盖任何输入框的值
+            request.timer = setTimeout(async () => {
                 try {
-                    const data = await getLastWorkoutData(exerciseName);
-                    if (data && data.sets_data && data.sets_data.length > 0) {
-                        lastWorkoutData = data;
-                        showLastWorkoutTooltip(exerciseName, data);
+                    const data = await getLastWorkoutData(exerciseName, muscleGroup);
+                    // 切换动作、删除卡片或进入其他肌群后，丢弃旧查询结果。
+                    if (lastWorkoutRequests.get(selectElement) !== request || !block.isConnected
+                        || selectElement.value !== exerciseName || currentMuscleGroup !== muscleGroup) return;
+                    if (data?.sets_data?.length || expand) {
+                        showLastWorkoutReference(selectElement, exerciseName, data, expand);
                     } else {
-                        hideLastWorkoutTooltip();
-                        lastWorkoutData = null;
+                        const emptyReference = block.querySelector('.last-workout-reference');
+                        emptyReference?.cancelAutoCollapse?.();
+                        emptyReference?.remove();
                     }
-                } catch (err) {
-                    console.error('获取上次训练数据失败:', err);
-                    hideLastWorkoutTooltip();
+                } catch (error) {
+                    console.error('获取上次训练数据失败:', error);
                 }
             }, 100);
         }
@@ -3240,54 +3149,140 @@
             }
         }
         
-        function showLastWorkoutTooltip(exerciseName, data) {
-            hideLastWorkoutTooltip(true);
-            
-            const tooltip = document.createElement('div');
-            tooltip.className = 'last-workout-tooltip';
-            tooltip.id = 'last-workout-tooltip';
-            
-            let setsHtml = data.sets_data.map((set, i) => {
-                const weight = set.weight;
-                const reps = set.reps;
-                const isSuperSet = (typeof weight === 'string' && weight.includes('-')) || (typeof reps === 'string' && reps.includes('-'));
-                if (isSuperSet) {
-                    return `<div class="tooltip-set tooltip-superset"><span class="superset-badge">超级组</span> ${weight}kg × ${reps}次</div>`;
+        function showLastWorkoutReference(selectElement, exerciseName, data, expand) {
+            const block = selectElement.closest('.exercise-block');
+            if (!block) return;
+            let reference = block.querySelector('.last-workout-reference');
+            const signature = JSON.stringify([exerciseName, data?.session_date, data?.sets_data]);
+            if (reference?.dataset.signature === signature) {
+                if (expand) {
+                    reference.cancelAutoCollapse?.();
+                    reference.dataset.manual = 'true';
+                    reference.open = true;
                 }
-                return `<div class="tooltip-set">第${i + 1}组: <span>${weight}kg</span> × <span>${reps}次</span></div>`;
-            }).join('');
-            
-            tooltip.innerHTML = `
-                <div class="tooltip-header">📚 上次训练参考</div>
-                <div class="tooltip-date">${data.session_date || '未知日期'}</div>
-                ${setsHtml}
-            `;
-            
-            document.body.appendChild(tooltip);
-            
-            // 2秒后自动消失
-            tooltipTimeout = setTimeout(() => {
-                hideLastWorkoutTooltip();
-            }, 2000);
-        }
-        
-        function hideLastWorkoutTooltip(immediate = false) {
-            if (tooltipTimeout) {
-                clearTimeout(tooltipTimeout);
-                tooltipTimeout = null;
+                return; // 后台同步不重置用户的收起状态，也不影响输入焦点。
             }
-            
-            const tooltip = document.getElementById('last-workout-tooltip');
-            if (tooltip) {
-                if (immediate) {
-                    tooltip.remove();
-                } else {
-                    tooltip.classList.add('fading');
-                    setTimeout(() => tooltip.remove(), 300);
-                }
+            const wasOpen = reference?.open ?? true;
+            const manual = expand || reference?.dataset.manual === 'true';
+            reference?.cancelAutoCollapse?.();
+            reference?.remove();
+            reference = document.createElement('details');
+            reference.className = 'last-workout-reference';
+            reference.dataset.exercise = exerciseName;
+            reference.dataset.signature = signature;
+            reference.open = expand || wasOpen;
+            if (manual) reference.dataset.manual = 'true';
+
+            const summary = document.createElement('summary');
+            const heading = document.createElement('span');
+            heading.className = 'reference-heading';
+            const title = document.createElement('span');
+            title.className = 'reference-label';
+            title.textContent = '上次训练';
+            const overview = document.createElement('span');
+            overview.className = 'reference-overview';
+            const weights = (data?.sets_data || []).flatMap(set => String(set.weight).split('-'))
+                .filter(value => value.trim() !== '').map(Number).filter(Number.isFinite);
+            const weightRange = weights.length
+                ? `${Math.min(...weights) === Math.max(...weights) ? Math.min(...weights) : `${Math.min(...weights)}–${Math.max(...weights)}`} kg`
+                : '重量见详情';
+            overview.textContent = data?.sets_data?.length ? `${data.sets_data.length} 组 · ${weightRange}` : '暂无记录';
+            heading.append(title, overview);
+            const toggle = document.createElement('span');
+            toggle.className = 'reference-toggle';
+            toggle.setAttribute('aria-hidden', 'true');
+            summary.append(heading, toggle);
+            reference.append(summary);
+
+            const body = document.createElement('div');
+            body.className = 'reference-body';
+            const meta = document.createElement('div');
+            meta.className = 'reference-meta';
+            const date = document.createElement('span');
+            date.className = 'reference-date';
+            date.textContent = data?.session_date || '';
+            const scrollHint = document.createElement('span');
+            scrollHint.textContent = data?.sets_data?.length > 6 ? '上下滑动查看' : '';
+            meta.append(date, scrollHint);
+            body.append(meta);
+
+            const sets = document.createElement('div');
+            sets.className = 'reference-sets';
+            sets.tabIndex = 0;
+            sets.setAttribute('role', 'region');
+            sets.setAttribute('aria-label', '上次各组重量与次数，可滚动查看');
+            if (data?.sets_data?.length) {
+                data.sets_data.forEach((set, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'reference-set';
+                    if (String(set.weight).includes('-') || String(set.reps).includes('-')) {
+                        row.classList.add('reference-superset');
+                    }
+                    const number = document.createElement('span');
+                    number.className = 'reference-number';
+                    number.textContent = `${index + 1}`;
+                    const values = document.createElement('span');
+                    values.textContent = `${set.weight} kg × ${set.reps} 次`;
+                    row.append(number, values);
+                    sets.append(row);
+                });
+            } else {
+                const empty = document.createElement('p');
+                empty.className = 'reference-empty';
+                empty.textContent = '这个动作还没有历史记录';
+                sets.append(empty);
             }
+            body.append(sets);
+            reference.append(body);
+            // 正常文档流：参考放在动作选择器与组数输入之间，不覆盖输入框。
+            block.querySelector('.set-columns').before(reference);
+            if (reference.open && !manual) scheduleReferenceCollapse(reference);
         }
-        
+
+        function scheduleReferenceCollapse(reference) {
+            let expired = false;
+            let cancelled = false;
+            const cancel = () => {
+                cancelled = true;
+                clearTimeout(timer);
+                document.removeEventListener('focusout', onFocusOut);
+                reference.removeEventListener('pointerdown', keepOpen);
+                reference.removeEventListener('keydown', keepOpen);
+                reference.removeEventListener('wheel', keepOpen);
+            };
+            const collapse = () => {
+                if (cancelled) return;
+                if (!reference.isConnected) { cancel(); return; }
+                // 输入期间不改变上方高度，避免光标和输入框突然跳动。
+                const active = document.activeElement;
+                if (active.closest('#current-session-container') && active.matches('input, textarea, select')) return;
+                cancel();
+                reference.open = false;
+            };
+            const onFocusOut = () => {
+                if (expired) setTimeout(collapse, 0);
+            };
+            const keepOpen = () => {
+                reference.dataset.manual = 'true';
+                cancel();
+            };
+            const timer = setTimeout(() => { expired = true; collapse(); }, 3000);
+            reference.cancelAutoCollapse = cancel;
+            document.addEventListener('focusout', onFocusOut);
+            reference.addEventListener('pointerdown', keepOpen);
+            reference.addEventListener('keydown', keepOpen);
+            reference.addEventListener('wheel', keepOpen, { passive: true });
+        }
+
+        function hideLastWorkoutReference(selectElement) {
+            const request = lastWorkoutRequests.get(selectElement);
+            if (request) clearTimeout(request.timer);
+            lastWorkoutRequests.delete(selectElement);
+            const reference = selectElement.closest('.exercise-block')?.querySelector('.last-workout-reference');
+            reference?.cancelAutoCollapse?.();
+            reference?.remove();
+        }
+
         // 删除动作块（同步草稿；全部删光则清除草稿，表示放弃本次未完成训练）
         function removeExerciseBlock(btn) {
             btn.closest('.exercise-block').remove();
@@ -3299,14 +3294,14 @@
 
         // --- 当前训练会话管理 ---
         function addExerciseToSession() {
-            const exerciseId = `ex-${Date.now()}`; // 为新动作生成唯一ID
+            const exerciseId = `ex-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; // 为新动作生成唯一ID
             const exerciseDiv = document.createElement('div');
             exerciseDiv.id = exerciseId;
             exerciseDiv.className = 'exercise-block bg-gray-800 p-3 rounded-lg border border-gray-600';
             exerciseDiv.innerHTML = `
                 <div class="flex items-center gap-2">
                     <select aria-label="训练动作" class="exercise-select w-full bg-gray-900 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="handleExerciseSelectChange(this); saveSessionToLocalStorage();"></select>
-                    <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select);" class="text-blue-400 hover:text-blue-300 p-1" title="查看上次训练"><i class="fas fa-history"></i></button>
+                    <button onclick="const select=this.previousElementSibling; if(select.value && select.value !== 'add_new') fetchAndShowLastWorkout(select, true);" class="text-blue-400 hover:text-blue-300 p-1" title="展开上次训练参考" aria-label="展开上次训练参考"><i class="fas fa-history"></i></button>
                     <button onclick="this.parentElement.parentElement.remove(); saveSessionToLocalStorage();" aria-label="移除动作" class="text-red-500 hover:text-red-400 p-1 text-2xl font-bold">×</button>
                 </div>
                 <div class="set-columns" aria-hidden="true"><span>组数</span><span>重量 <small>kg</small></span><span></span><span>次数</span><span></span></div><div class="sets-container mt-3 space-y-2"></div>
@@ -3363,7 +3358,7 @@
                     return freqB - freqA;
                 });
                 select.value = sortedByFrequency[0];
-                // 显示上次训练浮窗 + 自动填入上次重量到第一组
+                // 显示上次训练参考 + 自动填入上次重量到第一组
                 fetchAndShowLastWorkout(select);
                 autoFillFirstWeightFromLast(select);
             }
@@ -3447,6 +3442,8 @@
         }
 
         async function saveSession() {
+            window.setTimer?.commitFocused();
+            window.setTimer?.refresh();
             const saveButton = document.getElementById('save-session-button');
             saveButton.disabled = true; // Disable the button immediately
             saveButton.textContent = '保存中...'; // Change button text to indicate loading state
@@ -3515,10 +3512,10 @@
                     
                     if (isSuperSetWeight || isSuperSetReps) {
                         // 超级组：保存为字符串格式
-                        setsData.push({ weight: weight, reps: reps });
+                        setsData.push({ weight: weight, reps: reps, ...(window.setTimer?.fieldsFor(setElements[i]) || {}) });
                     } else {
                         // 普通组：保存为数字格式
-                        setsData.push({ weight: parseFloat(weight), reps: parseInt(reps) });
+                        setsData.push({ weight: parseFloat(weight), reps: parseInt(reps), ...(window.setTimer?.fieldsFor(setElements[i]) || {}) });
                     }
                 }
                 
@@ -3548,9 +3545,9 @@
                 showModal('已保存到本地', '当前离线或同步失败，数据已保存在本地，联网后会自动同步。');
             }
             document.getElementById('current-session-container').innerHTML = ''; // 清空当前训练界面
-            suppressTooltip = true; // 抑制浮窗显示
+            suppressTooltip = true; // 抑制参考显示
             addExerciseToSession(); // 添加一个默认的空动作块
-            suppressTooltip = false; // 恢复浮窗显示
+            suppressTooltip = false; // 恢复参考显示
             localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`); // 草稿已在保存前清除，这里兜底
             loadHistory(); // 重新加载历史记录
             saveButton.disabled = false;
@@ -3638,7 +3635,7 @@
                                     <div>
                                         <p class="font-semibold text-white">${workout.exercise_name}</p>
                                         <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
-                                            ${workout.sets_data.map((s, i) => formatSetDisplay(s, i)).join('<br>')}
+                                            ${workout.sets_data.map((s, i) => formatSetDisplay(s, i, workout.exercise_name, session.exercises_data)).join('<br>')}
                                         </div>
                                     </div>
                         `;

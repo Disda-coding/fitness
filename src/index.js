@@ -12,6 +12,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { validateWorkoutTiming } from '../public/timing-core.js';
 
 const app = new Hono().basePath('/api');
 
@@ -587,6 +588,12 @@ app.post('/sync', requireAuth, async (c) => {
     await ensureSyncColumns(c.env);
     const body = await c.req.json();
     const clientWorkouts = Array.isArray(body.workouts) ? body.workouts : [];
+    // Validate optional per-set timing before any workout write. Old records stay valid.
+    try {
+      for (const workout of clientWorkouts) validateWorkoutTiming(workout?.exercises_data);
+    } catch (error) {
+      return c.json({ error: `Invalid workout timing: ${error.message}` }, 400);
+    }
     const clientCustom = Array.isArray(body.customExercises) ? body.customExercises : [];
     const clientCommon = Array.isArray(body.commonExercises) ? body.commonExercises : [];
     const clientMeta = body.meta || {}; // { key: {value, updated_at} }
@@ -893,6 +900,8 @@ app.post('/session', requireAuth, async (c) => {
     if (!muscle_group || !exercises_data || exercises_data.length === 0) {
       return c.json({ error: 'Session data is incomplete' }, 400);
     }
+    try { validateWorkoutTiming(exercises_data); }
+    catch (error) { return c.json({ error: `Invalid workout timing: ${error.message}` }, 400); }
     const today = session_date || new Date().toISOString().slice(0, 10); // Format as YYYY-MM-DD
     const now = new Date().toISOString();
 
