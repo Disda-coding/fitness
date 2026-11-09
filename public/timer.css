@@ -30,6 +30,14 @@ body[data-timer-skin="dock"] .interval-card { border-left: 3px solid var(--prima
 #interval-dock strong { margin-left: auto; }
 .set-recorded > span:first-child { color: #45866c !important; font-weight: 600; }
 .set-recorded > span:first-child::after { content: ' ✓'; font-size: 10px; }
+.interval-context #interval-total { font-variant-numeric: tabular-nums; }
+/* 新增动作时展示上一个动作的节奏 */
+.previous-exercise { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface-soft); border: 1px dashed var(--line); color: var(--muted); font-size: 11px; }
+.previous-exercise strong { color: var(--ink); font-size: 12px; font-weight: 650; }
+.previous-exercise-label { color: var(--primary); font-size: 10px; letter-spacing: .5px; }
+/* 历史记录里的时长统计 */
+.history-total { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.history-exercise-stats { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .set-interval { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .timer-demo-picker { margin: 0 0 16px; }
 .timer-demo-picker > p { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 8px; }

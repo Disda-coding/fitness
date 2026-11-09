@@ -83,3 +83,41 @@ export function validateWorkoutTiming(exercises) {
         for (const id of path) done.add(id);
     }
 }
+
+// 单个动作的时长与平均组间歇，全部由 recorded_at / interval_seconds 复算。
+// 只统计动作内部的组间歇：跨动作那一段（上一动作最后一组 → 本动作第一组）不计入平均。
+export function summarizeExercise(sets) {
+    const list = Array.isArray(sets) ? sets.filter(set => set && typeof set === 'object') : [];
+    const times = list.map(set => Date.parse(set.recorded_at)).filter(Number.isFinite);
+    const ids = new Set(list.map(set => set.set_id).filter(Boolean));
+    const intervals = list
+        .filter(set => Number.isSafeInteger(set.interval_seconds) && set.interval_seconds >= 0
+            && set.previous_set_id && ids.has(set.previous_set_id))
+        .map(set => set.interval_seconds);
+    return {
+        recorded_sets: times.length,
+        duration_seconds: times.length ? Math.floor((Math.max(...times) - Math.min(...times)) / 1000) : 0,
+        avg_interval_seconds: intervals.length
+            ? Math.round(intervals.reduce((sum, value) => sum + value, 0) / intervals.length) : null,
+        interval_count: intervals.length,
+        first_recorded_at: times.length ? new Date(Math.min(...times)).toISOString() : null,
+        last_recorded_at: times.length ? new Date(Math.max(...times)).toISOString() : null,
+    };
+}
+
+// 整次训练总时长：第一组记录 → 最后一组记录（与历史记录展示口径一致）。
+export function summarizeSession(exercises) {
+    const times = [];
+    for (const exercise of Array.isArray(exercises) ? exercises : []) {
+        for (const set of Array.isArray(exercise?.sets_data) ? exercise.sets_data : []) {
+            const time = Date.parse(set?.recorded_at);
+            if (Number.isFinite(time)) times.push(time);
+        }
+    }
+    return {
+        recorded_sets: times.length,
+        duration_seconds: times.length ? Math.floor((Math.max(...times) - Math.min(...times)) / 1000) : 0,
+        first_recorded_at: times.length ? new Date(Math.min(...times)).toISOString() : null,
+        last_recorded_at: times.length ? new Date(Math.max(...times)).toISOString() : null,
+    };
+}

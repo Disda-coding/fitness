@@ -1,4 +1,4 @@
-import { validReps, validWeight, formatInterval, timingFields, recomputeIntervals } from './timing-core.js';
+import { validReps, validWeight, formatInterval, timingFields, recomputeIntervals, summarizeExercise, summarizeSession } from './timing-core.js';
 
 const container = document.getElementById('current-session-container');
 const card = document.getElementById('interval-card');
@@ -9,11 +9,15 @@ const headerTimer = document.getElementById('interval-header');
 const capsuleTimer = document.getElementById('interval-capsule');
 const dockTimer = document.getElementById('interval-dock');
 let latest = null;
+let firstRecorded = null;
 let compact = false;
 let observer;
+let idleTimer = null;
 // Production uses A. Only the isolated local demo exposes a style selector.
 let skin = 'header';
 let rendering = false;
+// 次数填完后 5s 没有操作就当作这组结束，立即开始算下一组的组间歇。
+const IDLE_COMMIT_MS = 5000;
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 function rows() { return [...container.querySelectorAll('.set-item')]; }
@@ -43,10 +47,25 @@ function commit(row) {
         delete state.interval_seconds;
         state.legacy = false;
     } else if (!state.recorded_at && !state.legacy && state.edited) {
-        state.recorded_at = new Date().toISOString();
+        // 用最后一次输入的时间，而不是触发提交的时刻，避免把停手后的空等算进组间歇。
+        state.recorded_at = new Date(row._lastEditAt || Date.now()).toISOString();
     }
+    row._lastEditAt = 0;
     refresh();
     saveSessionToLocalStorage();
+}
+
+function clearIdle() {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+}
+function scheduleIdle(row) {
+    clearIdle();
+    idleTimer = setTimeout(() => {
+        idleTimer = null;
+        if (!row.isConnected) return;
+        commit(row);
+    }, IDLE_COMMIT_MS);
 }
 
 function refresh() {
@@ -55,11 +74,13 @@ function refresh() {
     const allRows = rows();
     const linked = recomputeIntervals(allRows.map(ensureRow));
     latest = null;
+    firstRecorded = null;
     allRows.forEach((row, index) => {
         row._timing = linked[index];
         const recorded = Boolean(row._timing.recorded_at);
         row.classList.toggle('set-recorded', recorded);
         row.querySelector('span:first-child').title = recorded ? '已记录' : '';
+        if (recorded && (!firstRecorded || row._timing.recorded_at < firstRecorded)) firstRecorded = row._timing.recorded_at;
         if (recorded && (!latest || row._timing.recorded_at >= latest.recorded_at)) {
             latest = { ...row._timing, exercise: exerciseOf(row), number: [...row.parentElement.children].indexOf(row) + 1 };
         }
@@ -80,6 +101,13 @@ function render() {
         ? `上一段 ${formatInterval(latest.interval_seconds)}` : latest ? '下一组记录完成时，保存这段时间' : '每次记录之间的时间，包含休息与训练';
     const previous = document.getElementById('interval-previous');
     if (previous.textContent !== previousText) previous.textContent = previousText;
+    const total = document.getElementById('interval-total');
+    if (total) {
+        const totalText = firstRecorded
+            ? `本次训练 ${formatInterval(Math.floor((Date.now() - Date.parse(firstRecorded)) / 1000))}`
+            : '本次训练 --:--';
+        if (total.textContent !== totalText) total.textContent = totalText;
+    }
     const keyboard = document.body.classList.contains('keyboard-open');
     let placement = (compact || keyboard) && latest && active ? skin : 'none';
     if (keyboard || (skin === 'dock' && (window.innerWidth >= 1024 || document.getElementById('training-page').dataset.view === 'history'))) {
@@ -118,10 +146,20 @@ function observeCard() {
 }
 
 container.addEventListener('input', event => {
-    if (event.target.matches('.set-reps')) ensureRow(event.target.closest('.set-item')).edited = true;
+    const row = event.target.closest('.set-item');
+    if (!row) return;
+    row._lastEditAt = Date.now();
+    if (event.target.matches('.set-reps')) {
+        ensureRow(row).edited = true;
+        // 次数填完后 5s 没有任何操作，就当作这组结束，直接开始下一组的组间计时。
+        scheduleIdle(row);
+    }
 });
 container.addEventListener('focusout', event => {
-    if (event.target.matches('.set-reps, .set-weight')) commit(event.target.closest('.set-item'));
+    if (event.target.matches('.set-reps, .set-weight')) {
+        clearIdle();
+        commit(event.target.closest('.set-item'));
+    }
 });
 container.addEventListener('keydown', event => {
     if (event.key === 'Enter' && event.target.matches('.set-reps, .set-weight')) {
@@ -147,8 +185,22 @@ window.setTimer = {
         const active = document.activeElement;
         if (container.contains(active) && active.matches('.set-reps, .set-weight')) commit(active.closest('.set-item'));
     },
-    navigationChanged() { compact = false; refresh(); requestAnimationFrame(observeCard); },
+    navigationChanged() { clearIdle(); compact = false; refresh(); requestAnimationFrame(observeCard); },
     setSkin(value) { skin = ['header', 'capsule', 'dock'].includes(value) ? value : 'header'; render(); requestAnimationFrame(observeCard); },
+    summaryFor(sets) { return summarizeExercise(sets); },
+    sessionSummary(exercises) { return summarizeSession(exercises); },
+    format: formatInterval,
+    // 当前训练里某个动作块已记录部分的统计（新增动作时展示上一个动作用）。
+    blockSummary(block) {
+        if (!block) return null;
+        const sets = [...block.querySelectorAll('.set-item')].map(row => ensureRow(row));
+        const summary = summarizeExercise(sets);
+        if (!summary.recorded_sets) return null;
+        return { exercise: block.querySelector('.exercise-select')?.value || '', ...summary };
+    },
+    sessionElapsed() {
+        return firstRecorded ? Math.floor((Date.now() - Date.parse(firstRecorded)) / 1000) : null;
+    },
     historySuffix(set, exerciseName, exercises) {
         if (!Number.isSafeInteger(set.interval_seconds) || set.interval_seconds < 0) return '';
         const previous = exercises?.find(exercise => exercise.sets_data?.some(item => item.set_id === set.previous_set_id));

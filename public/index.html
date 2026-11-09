@@ -1517,7 +1517,7 @@
             
             <div id="interval-card" class="interval-card">
                 <div class="interval-face"><span class="interval-label"><i class="fas fa-stopwatch" aria-hidden="true"></i> 组间时间</span><strong data-interval-time role="timer" aria-live="off">--:--</strong></div>
-                <div class="interval-context"><span id="interval-detail" aria-live="polite">填好次数并结束编辑，即开始计时</span><small id="interval-previous">每次记录之间的时间，包含休息与训练</small></div>
+                <div class="interval-context"><span id="interval-detail" aria-live="polite">填好次数并结束编辑，即开始计时</span><small id="interval-previous">每次记录之间的时间，包含休息与训练</small><small id="interval-total">本次训练 --:--</small></div>
             </div>
             <div class="training-tabs" role="tablist" aria-label="训练记录视图">
                 <button id="current-tab" role="tab" aria-selected="true" aria-controls="current-panel" onclick="setTrainingView('current')">本次训练</button>
@@ -1990,7 +1990,24 @@
                 if (hit) hit.sets_data = [...(hit.sets_data || []), ...(ex.sets_data || [])];
                 else list.push({ exercise_name: ex.exercise_name, sets_data: [...(ex.sets_data || [])] });
             });
-            return list;
+            return withExerciseStats(list);
+        }
+
+        // 每个动作的总时长/平均组间歇写进 exercises_data，随记录一起入库；
+        // 历史记录直接读 stats，旧记录没有 stats 时在读的时候复算。
+        function withExerciseStats(exercises) {
+            return (exercises || []).map(ex => {
+                const sets = Array.isArray(ex?.sets_data) ? ex.sets_data : [];
+                if (!sets.some(set => set?.recorded_at)) {
+                    if (!('stats' in ex)) return ex;
+                    const cleared = { ...ex };
+                    delete cleared.stats;
+                    return cleared;
+                }
+                const stats = window.setTimer?.summaryFor(sets);
+                // 复算函数还没就绪（启动阶段）时保留原值，别把已入库的统计抹掉
+                return stats ? { ...ex, stats } : ex;
+            });
         }
 
         // 启动迁移：把历史误点提交产生的"同一天同部位"重复记录合并为一条（按历史排序取最早为主记录），
@@ -3326,6 +3343,24 @@
         }
 
         // --- 当前训练会话管理 ---
+        // 上一个动作的节奏摘要（新增动作时提示刚做完那个动作的平均组间与总时长）
+        function previousExerciseSummaryHtml(summary) {
+            if (!summary) return '';
+            const facts = [];
+            if (summary.interval_count > 0) {
+                facts.push(`平均组间 ${window.setTimer.format(summary.avg_interval_seconds)}`);
+            }
+            // 只有一组时谈不上「总时长」（首尾同一时刻），改说记了几组
+            facts.push(summary.recorded_sets > 1
+                ? `总时长 ${window.setTimer.format(summary.duration_seconds)}`
+                : `已记 ${summary.recorded_sets} 组`);
+            return `<div class="previous-exercise" role="note">
+                <span class="previous-exercise-label">上一个动作</span>
+                <strong>${summary.exercise || '未选动作'}</strong>
+                ${facts.map(fact => `<span>${fact}</span>`).join('')}
+            </div>`;
+        }
+
         function addExerciseToSession() {
             const exerciseId = `ex-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; // 为新动作生成唯一ID
             const exerciseDiv = document.createElement('div');
@@ -3343,7 +3378,16 @@
                     <button onclick="addMultipleSetsToExercise('${exerciseId}', 3);" class="add-set-btn flex-1 text-sm bg-gray-600 hover:bg-gray-500 rounded p-2">+ 添加3组</button>
                 </div>
             `;
-            document.getElementById('current-session-container').appendChild(exerciseDiv);
+            const sessionContainer = document.getElementById('current-session-container');
+            const existingBlocks = sessionContainer.querySelectorAll('.exercise-block');
+            const previousSummary = existingBlocks.length
+                ? window.setTimer?.blockSummary(existingBlocks[existingBlocks.length - 1]) : null;
+            sessionContainer.appendChild(exerciseDiv);
+            // 显示上一个动作的平均组间歇与总时长（只对已记录过组数的动作有意义）
+            if (previousSummary) {
+                exerciseDiv.querySelector('.set-columns')
+                    .insertAdjacentHTML('beforebegin', previousExerciseSummaryHtml(previousSummary));
+            }
             // 自动为新动作添加1组
             addSetToExercise(exerciseId);
             // 更新下拉菜单并选择频率最高但未选择过的动作
@@ -3567,7 +3611,7 @@
             }
 
             // 离线优先：先写入本地（生成uid），再尝试同步到服务器
-            workoutStore.add(currentMuscleGroup, exercisesData);
+            workoutStore.add(currentMuscleGroup, withExerciseStats(exercisesData));
             // 立即清除本地草稿（必须在同步等待之前，否则同步期间关闭/刷新页面会导致草稿残留、下次恢复后再次保存产生重复记录）
             localStorage.removeItem(`currentSessionData_${currentMuscleGroup}`);
             const synced = await syncManager.sync();
@@ -3655,18 +3699,33 @@
 
                 let html = '';
                 sessions.forEach(session => {
+                    const sessionStats = window.setTimer?.sessionSummary(session.exercises_data) || { recorded_sets: 0, duration_seconds: 0 };
+                    const sessionTotal = sessionStats.recorded_sets > 1
+                        ? `<span class="history-total" title="第一组记录 → 最后一组记录"><i class="fas fa-stopwatch" aria-hidden="true"></i> ${window.setTimer.format(sessionStats.duration_seconds)}</span>`
+                        : '';
                     html += `
                         <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
                             <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-3">
                                 <h3 class="font-bold text-lg text-blue-300">${session.session_date}</h3>
-                                <button onclick="deleteSession('${session.uid}')" aria-label="删除训练记录" class="history-delete text-gray-500 hover:text-red-400 text-xl"><i class="fas fa-trash-can" aria-hidden="true"></i></button>
+                                <div class="flex items-center gap-3">${sessionTotal}<button onclick="deleteSession('${session.uid}')" aria-label="删除训练记录" class="history-delete text-gray-500 hover:text-red-400 text-xl"><i class="fas fa-trash-can" aria-hidden="true"></i></button></div>
                             </div>
                             <div class="space-y-3">
                     `;
                     session.exercises_data.forEach(workout => {
+                        const stats = workout.stats || (workout.sets_data?.some(s => s?.recorded_at)
+                            ? window.setTimer?.summaryFor(workout.sets_data) : null);
+                        const statsFacts = [];
+                        if (stats?.recorded_sets > 1) {
+                            if (stats.interval_count > 0) statsFacts.push(`平均组间 ${window.setTimer.format(stats.avg_interval_seconds)}`);
+                            statsFacts.push(`总时长 ${window.setTimer.format(stats.duration_seconds)}`);
+                        }
+                        const statsLine = statsFacts.length
+                            ? `<span class="history-exercise-stats">${statsFacts.join(' · ')}</span>` : '';
                         html += `
                                     <div>
-                                        <p class="font-semibold text-white">${workout.exercise_name}</p>
+                                        <div class="flex items-baseline justify-between gap-2 flex-wrap">
+                                            <p class="font-semibold text-white">${workout.exercise_name}</p>${statsLine}
+                                        </div>
                                         <div class="text-sm text-gray-300 pl-4 border-l-2 border-gray-600 mt-1 ml-1">
                                             ${workout.sets_data.map((s, i) => formatSetDisplay(s, i, workout.exercise_name, session.exercises_data)).join('<br>')}
                                         </div>
