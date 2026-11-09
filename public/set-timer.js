@@ -11,7 +11,6 @@ const dockTimer = document.getElementById('interval-dock');
 let latest = null;
 let firstRecorded = null;
 let compact = false;
-let observer;
 let idleTimer = null;
 // Production uses A. Only the isolated local demo exposes a style selector.
 let skin = 'header';
@@ -133,17 +132,32 @@ function stickyEdge() {
     const pageHeader = document.querySelector('#training-page .page-header');
     return window.innerWidth > 640 ? header.height + pageHeader.offsetHeight : header.height;
 }
-function observeCard() {
-    observer?.disconnect();
+// 直接量矩形来判定，不用 IntersectionObserver：它只在阈值穿越时回调，
+// 设备上出现过「计时器已完全被顶栏盖住但胶囊不出」的情况，这里改成每次滚动/每秒都实测。
+let edgeVar = -1;
+function updateCompact() {
     const edge = stickyEdge();
-    document.documentElement.style.setProperty('--timer-edge', `${edge}px`);
-    observer = new IntersectionObserver(entries => {
-        const entry = entries[0];
-        compact = entry.boundingClientRect.bottom <= edge;
+    if (Math.round(edge) !== edgeVar) {
+        edgeVar = Math.round(edge);
+        document.documentElement.style.setProperty('--timer-edge', `${edge}px`);
+    }
+    const rect = timerFace.getBoundingClientRect();
+    // rect.height 为 0 说明训练页还没显示，不能当成「已盖住」
+    const covered = rect.height > 0 && rect.bottom <= edge;
+    if (covered !== compact) {
+        compact = covered;
         render();
-    }, { rootMargin: `-${edge}px 0px 0px 0px`, threshold: [0, 1] });
-    observer.observe(timerFace);
+    }
 }
+let scrollFrame = 0;
+function onScroll() {
+    if (scrollFrame) return;
+    scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = 0;
+        updateCompact();
+    });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
 
 container.addEventListener('input', event => {
     const row = event.target.closest('.set-item');
@@ -185,8 +199,8 @@ window.setTimer = {
         const active = document.activeElement;
         if (container.contains(active) && active.matches('.set-reps, .set-weight')) commit(active.closest('.set-item'));
     },
-    navigationChanged() { clearIdle(); compact = false; refresh(); requestAnimationFrame(observeCard); },
-    setSkin(value) { skin = ['header', 'capsule', 'dock'].includes(value) ? value : 'header'; render(); requestAnimationFrame(observeCard); },
+    navigationChanged() { clearIdle(); compact = false; refresh(); requestAnimationFrame(updateCompact); },
+    setSkin(value) { skin = ['header', 'capsule', 'dock'].includes(value) ? value : 'header'; render(); requestAnimationFrame(updateCompact); },
     summaryFor(sets) { return summarizeExercise(sets); },
     sessionSummary(exercises) { return summarizeSession(exercises); },
     format: formatInterval,
@@ -208,9 +222,9 @@ window.setTimer = {
         return `<span class="set-interval"> · 组间 ${formatInterval(set.interval_seconds)}${cross}</span>`;
     },
 };
-window.addEventListener('resize', () => { render(); observeCard(); });
+window.addEventListener('resize', () => { updateCompact(); render(); });
 window.addEventListener('pageshow', render);
 document.addEventListener('visibilitychange', render);
 new MutationObserver(render).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-setInterval(() => { if (!document.hidden) render(); }, 1000);
-observeCard();
+setInterval(() => { if (!document.hidden) { updateCompact(); render(); } }, 1000);
+updateCompact();
