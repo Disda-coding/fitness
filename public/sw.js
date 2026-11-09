@@ -1,5 +1,5 @@
 // Service Worker: 健身追踪器 PWA 离线支持
-const CACHE_NAME = 'fitness-tracker-v15';
+const CACHE_NAME = 'fitness-tracker-v16';
 
 // 预缓存的应用外壳资源
 const PRECACHE_URLS = [
@@ -86,25 +86,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 页面导航：缓存优先（离线可秒开），后台静默更新（同时更新导航URL和/index.html两个缓存条目）
+  // 页面导航：网络优先（1.5s 超时），离线/超时才回退缓存。
+  // 以前是缓存优先，导致每次部署后要打开两次才能看到新版（第一次拿到旧 index.html）。
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const fetchPromise = fetchWithTimeout(event.request, 10000)
-          .then((resp) => {
-            if (resp && resp.status === 200) {
-              const c1 = resp.clone();
-              const c2 = resp.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, c1);   // 更新实际导航URL（如 /）
-                cache.put('/index.html', c2);   // 更新标准入口
-              });
-            }
-            return resp;
-          })
-          .catch(() => cached || caches.match('/index.html'));
-        return cached || fetchPromise;
-      })
+      fetchWithTimeout(event.request, 1500)
+        .then((resp) => {
+          if (resp && resp.status === 200) {
+            const c1 = resp.clone();
+            const c2 = resp.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, c1);   // 更新实际导航URL（如 /）
+              cache.put('/index.html', c2);   // 更新标准入口
+            });
+          }
+          return resp;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
     );
     return;
   }

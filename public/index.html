@@ -4100,6 +4100,15 @@
 
             // 注册 Service Worker（PWA离线支持）+ 检测云端新版本
             if ('serviceWorker' in navigator) {
+                // 新版本接管后自动刷新一次，避免「HTML 已是新版、CSS/JS 还是旧缓存」的半新半旧状态。
+                // 首次安装不刷新（此前没有 controller）；训练草稿每次输入都会落盘，刷新不丢数据。
+                const hadController = Boolean(navigator.serviceWorker.controller);
+                let reloaded = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!hadController || reloaded) return;
+                    reloaded = true;
+                    location.reload();
+                });
                 navigator.serviceWorker.register('/sw.js')
                     .then(reg => {
                         console.log('SW registered:', reg.scope);
