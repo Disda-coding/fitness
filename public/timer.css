@@ -1,5 +1,5 @@
 /* One timer, three presentations. The normal-flow card keeps its space when stowed. */
-.interval-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 116px; margin: 4px 0 20px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.interval-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 116px; margin: 4px 0 20px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; transition: opacity .2s, border-color .2s; }
 .interval-face { display: flex; flex-direction: column; flex-shrink: 0; }
 .interval-label { font-size: 11px; color: var(--muted); letter-spacing: .8px; }
 .interval-label i { margin-right: 5px; color: var(--primary); }
@@ -8,6 +8,7 @@
 .interval-context > span { font-size: 12px; overflow-wrap: anywhere; }
 .interval-context small { font-size: 10px; color: var(--muted); }
 .interval-card > * { transition: opacity .2s, transform .2s; }
+.interval-card.timer-stowed { opacity: 0; pointer-events: none; }
 .interval-card.timer-stowed > * { opacity: 0; transform: translateY(-6px); pointer-events: none; }
 .interval-mini { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink); animation: timer-appear .2s ease-out; font-variant-numeric: tabular-nums; }
 .interval-mini[hidden] { display: none !important; }
@@ -50,7 +51,8 @@ body[data-timer-skin="dock"] .interval-card { border-left: 3px solid var(--prima
     .interval-context small { font-size: 10px; max-width: 160px; }
     body[data-timer-placement="header"] .shell-actions { gap: 4px; }
     body[data-timer-placement="header"] .demo-reset { display: none; }
-    body[data-timer-placement="header"] #mobile-page-title { left: 40%; max-width: 70px; font-size: 15px; }
+    /* Stay optically centred; only the width shrinks so the timer never crowds the text. */
+    body[data-timer-placement="header"] #mobile-page-title { max-width: calc(100% - 200px); }
     body[data-timer-placement="header"] .shell-inner { gap: 4px; }
     #interval-header { min-width: 63px; }
 }

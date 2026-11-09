@@ -2,6 +2,9 @@ import { validReps, validWeight, formatInterval, timingFields, recomputeInterval
 
 const container = document.getElementById('current-session-container');
 const card = document.getElementById('interval-card');
+// The pill must take over the moment the timer itself is hidden, not when the
+// whole card (which keeps extra padding below the digits) has scrolled away.
+const timerFace = card.querySelector('.interval-face') || card;
 const headerTimer = document.getElementById('interval-header');
 const capsuleTimer = document.getElementById('interval-capsule');
 const dockTimer = document.getElementById('interval-dock');
@@ -111,7 +114,7 @@ function observeCard() {
         compact = entry.boundingClientRect.bottom <= edge;
         render();
     }, { rootMargin: `-${edge}px 0px 0px 0px`, threshold: [0, 1] });
-    observer.observe(card);
+    observer.observe(timerFace);
 }
 
 container.addEventListener('input', event => {
