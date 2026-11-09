@@ -1712,9 +1712,9 @@
 
     <!-- 训练与同步逻辑 -->
     <script>
-        const API_BASE_URL = '';
+        const API_BASE_URL = 'https://fitness-tracker.497457669.workers.dev/api';
         // 版本号：占位符由 scripts/deploy-frontend.js 在部署时替换为 v{version}-{git短hash}；本地开发显示 dev
-        const APP_VERSION_RAW = '__APP_VERSION__';
+        const APP_VERSION_RAW = 'v1.2.0-79610d6';
         const APP_VERSION = APP_VERSION_RAW.startsWith('__') ? 'dev' : APP_VERSION_RAW;
         const appVersionEl = document.getElementById('app-version');
         if (appVersionEl) appVersionEl.textContent = APP_VERSION;
@@ -3159,8 +3159,13 @@
                     reference.cancelAutoCollapse?.();
                     reference.dataset.manual = 'true';
                     reference.open = true;
+                    return;
                 }
-                return; // 后台同步不重置用户的收起状态，也不影响输入焦点。
+                // 后台同步不重置用户的收起状态，也不影响输入焦点；只补回丢失的收起调度。
+                if (reference.open && reference.dataset.manual !== 'true' && !reference._collapsePending) {
+                    scheduleReferenceCollapse(reference);
+                }
+                return;
             }
             const wasOpen = reference?.open ?? true;
             const manual = expand || reference?.dataset.manual === 'true';
@@ -3239,39 +3244,67 @@
             if (reference.open && !manual) scheduleReferenceCollapse(reference);
         }
 
+        // 3 秒后自动收起。两条兜底：
+        // 1) 焦点还在输入控件里时推迟，但要继续重试（只靠 focusout 会在焦点从一个
+        //    输入框直接跳到另一个时永久失去调度）；
+        // 2) 在参考上滚动/按键只是延长停留，不设 manual；只有明确点摘要才是用户手动接管。
+        //    否则手机上手指从卡片上划过（pointerdown）就会把它永久钉在展开状态。
+        const COLLAPSE_DELAY = 3000;
+        const COLLAPSE_RETRY = 600;
+
         function scheduleReferenceCollapse(reference) {
+            reference.cancelAutoCollapse?.(); // 同一元素重复调度时不叠加定时器
             let expired = false;
             let cancelled = false;
+            let retry = null;
+            let timer = null;
             const cancel = () => {
                 cancelled = true;
                 clearTimeout(timer);
+                clearTimeout(retry);
+                reference._collapsePending = false;
                 document.removeEventListener('focusout', onFocusOut);
-                reference.removeEventListener('pointerdown', keepOpen);
-                reference.removeEventListener('keydown', keepOpen);
-                reference.removeEventListener('wheel', keepOpen);
+                reference.removeEventListener('click', onSummaryClick);
+                reference.removeEventListener('pointerdown', extend);
+                reference.removeEventListener('keydown', extend);
+                reference.removeEventListener('wheel', extend);
             };
             const collapse = () => {
                 if (cancelled) return;
                 if (!reference.isConnected) { cancel(); return; }
                 // 输入期间不改变上方高度，避免光标和输入框突然跳动。
                 const active = document.activeElement;
-                if (active.closest('#current-session-container') && active.matches('input, textarea, select')) return;
+                if (active.closest('#current-session-container') && active.matches('input, textarea, select')) {
+                    retry = setTimeout(collapse, COLLAPSE_RETRY);
+                    return;
+                }
                 cancel();
                 reference.open = false;
             };
             const onFocusOut = () => {
                 if (expired) setTimeout(collapse, 0);
             };
-            const keepOpen = () => {
+            const arm = () => {
+                clearTimeout(timer);
+                expired = false;
+                timer = setTimeout(() => { expired = true; collapse(); }, COLLAPSE_DELAY);
+            };
+            const extend = () => {
+                if (!cancelled) arm();
+            };
+            const onSummaryClick = event => {
+                if (!event.target.closest('summary')) return;
                 reference.dataset.manual = 'true';
                 cancel();
             };
-            const timer = setTimeout(() => { expired = true; collapse(); }, 3000);
+            arm();
             reference.cancelAutoCollapse = cancel;
+            reference._collapsePending = true;
             document.addEventListener('focusout', onFocusOut);
-            reference.addEventListener('pointerdown', keepOpen);
-            reference.addEventListener('keydown', keepOpen);
-            reference.addEventListener('wheel', keepOpen, { passive: true });
+            reference.addEventListener('click', onSummaryClick);
+            reference.addEventListener('pointerdown', extend);
+            reference.addEventListener('keydown', extend);
+            reference.addEventListener('wheel', extend, { passive: true });
         }
 
         function hideLastWorkoutReference(selectElement) {
