@@ -1712,9 +1712,9 @@
 
     <!-- 训练与同步逻辑 -->
     <script>
-        const API_BASE_URL = 'https://fitness-tracker.497457669.workers.dev/api';
+        const API_BASE_URL = '';
         // 版本号：占位符由 scripts/deploy-frontend.js 在部署时替换为 v{version}-{git短hash}；本地开发显示 dev
-        const APP_VERSION_RAW = 'v1.2.0-79610d6';
+        const APP_VERSION_RAW = '__APP_VERSION__';
         const APP_VERSION = APP_VERSION_RAW.startsWith('__') ? 'dev' : APP_VERSION_RAW;
         const appVersionEl = document.getElementById('app-version');
         if (appVersionEl) appVersionEl.textContent = APP_VERSION;
