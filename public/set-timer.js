@@ -17,7 +17,6 @@ let skin = 'header';
 let rendering = false;
 // 次数填完后 5s 没有操作就当作这组结束，立即开始算下一组的组间歇。
 const IDLE_COMMIT_MS = 5000;
-const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 function rows() { return [...container.querySelectorAll('.set-item')]; }
 function ensureRow(row) {
@@ -96,16 +95,16 @@ function render() {
     const detail = document.getElementById('interval-detail');
     const detailText = latest ? `${latest.exercise} · 第 ${latest.number} 组已记录` : '填好次数并结束编辑，即开始计时';
     if (detail.textContent !== detailText) detail.textContent = detailText;
-    const previousText = latest?.interval_seconds !== undefined
-        ? `上一段 ${formatInterval(latest.interval_seconds)}` : latest ? '下一组记录完成时，保存这段时间' : '每次记录之间的时间，包含休息与训练';
+    const previousHtml = latest?.interval_seconds !== undefined
+        ? `上一段 <b class="time-gap">${formatInterval(latest.interval_seconds)}</b>`
+        : latest ? '下一组记录完成时，保存这段时间' : '每次记录之间的时间，包含休息与训练';
     const previous = document.getElementById('interval-previous');
-    if (previous.textContent !== previousText) previous.textContent = previousText;
+    if (previous._html !== previousHtml) { previous._html = previousHtml; previous.innerHTML = previousHtml; }
     const total = document.getElementById('interval-total');
     if (total) {
-        const totalText = firstRecorded
-            ? `本次训练 ${formatInterval(Math.floor((Date.now() - Date.parse(firstRecorded)) / 1000))}`
-            : '本次训练 --:--';
-        if (total.textContent !== totalText) total.textContent = totalText;
+        const totalSeconds = firstRecorded ? Math.floor((Date.now() - Date.parse(firstRecorded)) / 1000) : null;
+        const totalHtml = `本次训练 <b class="time-total">${totalSeconds === null ? '--:--' : formatInterval(totalSeconds)}</b>`;
+        if (total._html !== totalHtml) { total._html = totalHtml; total.innerHTML = totalHtml; }
     }
     const keyboard = document.body.classList.contains('keyboard-open');
     let placement = (compact || keyboard) && latest && active ? skin : 'none';
@@ -215,11 +214,9 @@ window.setTimer = {
     sessionElapsed() {
         return firstRecorded ? Math.floor((Date.now() - Date.parse(firstRecorded)) / 1000) : null;
     },
-    historySuffix(set, exerciseName, exercises) {
+    historySuffix(set) {
         if (!Number.isSafeInteger(set.interval_seconds) || set.interval_seconds < 0) return '';
-        const previous = exercises?.find(exercise => exercise.sets_data?.some(item => item.set_id === set.previous_set_id));
-        const cross = previous && previous.exercise_name !== exerciseName ? `（跨动作：${escapeHtml(previous.exercise_name)}）` : '';
-        return `<span class="set-interval"> · 组间 ${formatInterval(set.interval_seconds)}${cross}</span>`;
+        return `<span class="set-interval"> · 组间 <b class="time-gap">${formatInterval(set.interval_seconds)}</b></span>`;
     },
 };
 window.addEventListener('resize', () => { updateCompact(); render(); });

@@ -2760,7 +2760,7 @@
 
         // --- 格式化显示辅助函数 ---
         function formatSetDisplay(set, index, exerciseName, exercises) {
-            const interval = window.setTimer?.historySuffix(set, exerciseName, exercises) || "";
+            const interval = window.setTimer?.historySuffix(set) || "";
             const weight = set.weight;
             const reps = set.reps;
             const isSuperSet = (typeof weight === 'string' && weight.includes('-')) || (typeof reps === 'string' && reps.includes('-'));
@@ -3348,11 +3348,11 @@
             if (!summary) return '';
             const facts = [];
             if (summary.interval_count > 0) {
-                facts.push(`平均组间 ${window.setTimer.format(summary.avg_interval_seconds)}`);
+                facts.push(`平均组间 <b class="time-gap">${window.setTimer.format(summary.avg_interval_seconds)}</b>`);
             }
             // 只有一组时谈不上「总时长」（首尾同一时刻），改说记了几组
             facts.push(summary.recorded_sets > 1
-                ? `总时长 ${window.setTimer.format(summary.duration_seconds)}`
+                ? `总时长 <b class="time-total">${window.setTimer.format(summary.duration_seconds)}</b>`
                 : `已记 ${summary.recorded_sets} 组`);
             return `<div class="previous-exercise" role="note">
                 <span class="previous-exercise-label">上一个动作</span>
@@ -3701,7 +3701,7 @@
                 sessions.forEach(session => {
                     const sessionStats = window.setTimer?.sessionSummary(session.exercises_data) || { recorded_sets: 0, duration_seconds: 0 };
                     const sessionTotal = sessionStats.recorded_sets > 1
-                        ? `<span class="history-total" title="第一组记录 → 最后一组记录"><i class="fas fa-stopwatch" aria-hidden="true"></i> ${window.setTimer.format(sessionStats.duration_seconds)}</span>`
+                        ? `<span class="history-total" title="第一组记录 → 最后一组记录"><i class="fas fa-stopwatch" aria-hidden="true"></i><b class="time-total">${window.setTimer.format(sessionStats.duration_seconds)}</b></span>`
                         : '';
                     html += `
                         <div class="history-session bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
@@ -3716,8 +3716,8 @@
                             ? window.setTimer?.summaryFor(workout.sets_data) : null);
                         const statsFacts = [];
                         if (stats?.recorded_sets > 1) {
-                            if (stats.interval_count > 0) statsFacts.push(`平均组间 ${window.setTimer.format(stats.avg_interval_seconds)}`);
-                            statsFacts.push(`总时长 ${window.setTimer.format(stats.duration_seconds)}`);
+                            if (stats.interval_count > 0) statsFacts.push(`平均组间 <b class="time-gap">${window.setTimer.format(stats.avg_interval_seconds)}</b>`);
+                            statsFacts.push(`总时长 <b class="time-total">${window.setTimer.format(stats.duration_seconds)}</b>`);
                         }
                         const statsLine = statsFacts.length
                             ? `<span class="history-exercise-stats">${statsFacts.join(' · ')}</span>` : '';

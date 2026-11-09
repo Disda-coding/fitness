@@ -28,6 +28,12 @@ body[data-timer-skin="capsule"] .interval-face strong { color: var(--primary); }
 body[data-timer-skin="dock"] .interval-card { border-left: 3px solid var(--primary); }
 #interval-dock { grid-column: 1 / -1; padding: 6px 12px 12px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
 #interval-dock strong { margin-left: auto; }
+/* 时间语义色：蓝=总时长，青=组间/间隔。深色用亮青，浅色用深青保证对比度 */
+:root { --timer-total: var(--primary); --timer-gap: #5dcaa5; }
+:root[data-theme="light"] { --timer-gap: #0f6e56; }
+.time-total, .time-gap { font-weight: 600; font-variant-numeric: tabular-nums; font-style: normal; }
+.time-total { color: var(--timer-total); }
+.time-gap { color: var(--timer-gap); }
 .set-recorded > span:first-child { color: #45866c !important; font-weight: 600; }
 .set-recorded > span:first-child::after { content: ' ✓'; font-size: 10px; }
 .interval-context #interval-total { font-variant-numeric: tabular-nums; }
