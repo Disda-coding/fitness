@@ -44,9 +44,10 @@ function commit(row) {
         delete state.previous_set_id;
         delete state.interval_seconds;
         state.legacy = false;
-    } else if (!state.recorded_at && !state.legacy && state.edited) {
+    } else if (!state.recorded_at && state.edited) {
         // 用最后一次输入的时间，而不是触发提交的时刻，避免把停手后的空等算进组间歇。
         state.recorded_at = new Date(row._lastEditAt || Date.now()).toISOString();
+        state.legacy = false;
     }
     row._lastEditAt = 0;
     refresh();
@@ -185,8 +186,10 @@ window.setTimer = {
     refresh,
     restoreRow(row, data) {
         const fields = timingFields(data);
-        // A refresh during an unfinished edit must not resurrect a cleared completion.
-        if (!isValidRow(row) || (fields.recorded_at && !Number.isFinite(Date.parse(fields.recorded_at)))) {
+        // 只依据「保存下来的数据」判断：那时 DOM 可能还没就绪（动作下拉未选中、组数未填），
+        // 用 DOM 判断会把已经记录好的时间戳抹掉，而且会让这些组永久失去计时。
+        const savedRepsOk = validReps(data?.reps);
+        if (fields.recorded_at && (!savedRepsOk || !Number.isFinite(Date.parse(fields.recorded_at)))) {
             delete fields.recorded_at;
             delete fields.previous_set_id;
             delete fields.interval_seconds;

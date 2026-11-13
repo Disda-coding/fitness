@@ -3379,9 +3379,12 @@
                 </div>
             `;
             const sessionContainer = document.getElementById('current-session-container');
-            const existingBlocks = sessionContainer.querySelectorAll('.exercise-block');
-            const previousSummary = existingBlocks.length
-                ? window.setTimer?.blockSummary(existingBlocks[existingBlocks.length - 1]) : null;
+            const existingBlocks = [...sessionContainer.querySelectorAll('.exercise-block')];
+            // 从最近的动作往前找第一个真正记过时间的：相邻那个可能一组都没记录，直接跳过
+            let previousSummary = null;
+            for (let i = existingBlocks.length - 1; i >= 0 && !previousSummary; i--) {
+                previousSummary = window.setTimer?.blockSummary(existingBlocks[i]) || null;
+            }
             sessionContainer.appendChild(exerciseDiv);
             // 显示上一个动作的平均组间歇与总时长（只对已记录过组数的动作有意义）
             if (previousSummary) {
