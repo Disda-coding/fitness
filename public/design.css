@@ -136,6 +136,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .last-workout-reference[open] .reference-toggle::after { content: '收起'; }
 .reference-body { padding: 8px 12px 10px; border-top: 1px solid var(--line); }
 .reference-meta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.reference-overview-total { font-weight: 600; color: var(--timer-total); font-variant-numeric: tabular-nums; }
+.reference-stats { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; margin: 0 0 8px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.reference-stats b { font-weight: 600; }
 .reference-sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; max-height: 92px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .reference-sets:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .reference-set { display: flex; align-items: baseline; gap: 6px; min-height: 28px; padding: 4px 0; font-size: 12px; font-variant-numeric: tabular-nums; min-width: 0; }

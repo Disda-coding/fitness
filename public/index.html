@@ -1974,7 +1974,8 @@
                         (ex.exercise_name && ex.exercise_name.trim().toLowerCase() === nameLc)
                     );
                     if (found && found.sets_data && found.sets_data.length > 0) {
-                        return { sets_data: found.sets_data, session_date: session.session_date };
+                        // stats 是保存这次训练时写入的节奏统计；老记录没有就由调用方按时间戳复算
+                        return { sets_data: found.sets_data, session_date: session.session_date, stats: found.stats || null };
                     }
                 }
                 return null;
@@ -3203,12 +3204,29 @@
             title.textContent = '上次训练';
             const overview = document.createElement('span');
             overview.className = 'reference-overview';
+            // 上次训练那一次的平均组间与总时长：优先用随记录存的 stats，老记录按 recorded_at 复算
+            const timing = data?.sets_data?.length
+                ? (data.stats || window.setTimer?.summaryFor?.(data.sets_data) || null)
+                : null;
+            const timingFacts = [];
+            if (timing?.recorded_sets > 1) {
+                if (timing.interval_count > 0) {
+                    timingFacts.push(`平均组间 <b class="time-gap">${window.setTimer.format(timing.avg_interval_seconds)}</b>`);
+                }
+                timingFacts.push(`总时长 <b class="time-total">${window.setTimer.format(timing.duration_seconds)}</b>`);
+            }
             const weights = (data?.sets_data || []).flatMap(set => String(set.weight).split('-'))
                 .filter(value => value.trim() !== '').map(Number).filter(Number.isFinite);
             const weightRange = weights.length
                 ? `${Math.min(...weights) === Math.max(...weights) ? Math.min(...weights) : `${Math.min(...weights)}–${Math.max(...weights)}`} kg`
                 : '重量见详情';
             overview.textContent = data?.sets_data?.length ? `${data.sets_data.length} 组 · ${weightRange}` : '暂无记录';
+            if (timing?.recorded_sets > 1) {
+                const duration = document.createElement('b');
+                duration.className = 'reference-overview-total';
+                duration.textContent = ` · 总时长 ${window.setTimer.format(timing.duration_seconds)}`;
+                overview.append(duration);
+            }
             heading.append(title, overview);
             const toggle = document.createElement('span');
             toggle.className = 'reference-toggle';
@@ -3227,6 +3245,12 @@
             scrollHint.textContent = data?.sets_data?.length > 6 ? '上下滑动查看' : '';
             meta.append(date, scrollHint);
             body.append(meta);
+            if (timingFacts.length) {
+                const stats = document.createElement('div');
+                stats.className = 'reference-stats';
+                stats.innerHTML = timingFacts.join(' · ');
+                body.append(stats);
+            }
 
             const sets = document.createElement('div');
             sets.className = 'reference-sets';
